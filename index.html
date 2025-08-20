@@ -1,349 +1,463 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>VR Robot Asisten Ros</title>
-    <meta name="description" content="An interactive VR disaster preparedness assistant robot for mobile phones.">
+    <title>VR Robot Asisten Ros (Generatif AI)</title>
+    <meta name="description" content="An interactive VR disaster preparedness assistant robot named Ros, powered by Generative AI.">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- A-Frame Library -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-        }
-        /* UI Overlay untuk tombol mic dan instruksi */
-        #ui-overlay {
+        /* Styles for the UI overlay */
+        #ui-container {
             position: absolute;
-            bottom: 0;
+            top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             display: flex;
             flex-direction: column;
-            justify-content: flex-end;
+            justify-content: center;
             align-items: center;
             z-index: 10;
             font-family: Arial, sans-serif;
             text-align: center;
-            pointer-events: none; /* Biarkan klik tembus ke scene A-Frame */
         }
-        #mic-button {
-            width: 80px;
-            height: 80px;
-            background-color: #4CAF50;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        #start-btn {
+            padding: 15px 30px;
+            font-size: 18px;
             cursor: pointer;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            transition: all 0.2s ease;
-            pointer-events: auto; /* Tombol ini bisa diklik */
-            opacity: 1; /* Terlihat di awal */
-        }
-        #mic-button.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-        #mic-button:active {
-            transform: scale(0.95);
-        }
-        #mic-button.listening {
-            background-color: #F44336;
-            animation: pulse 1.5s infinite;
-        }
-        #mic-icon {
-            width: 40px;
-            height: 40px;
-            fill: white;
-        }
-        #initial-instruction {
+            border-radius: 10px;
+            border: none;
+            background-color: #4CAF50;
             color: white;
-            background-color: rgba(0, 0, 0, 0.7);
-            padding: 10px 20px;
-            border-radius: 20px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        #keyboard-input-container {
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        #text-input {
+            padding: 10px;
             font-size: 16px;
-            transition: opacity 0.5s ease;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-right: 10px;
         }
-        #initial-instruction.hidden {
-            opacity: 0;
-        }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7); }
-            70% { box-shadow: 0 0 0 20px rgba(244, 67, 54, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+        #send-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            border: none;
+            background-color: #008CBA;
+            color: white;
         }
     </style>
     <script>
+        // This component handles the voice recognition logic, TTS, and robot animation.
         AFRAME.registerComponent('voice-listener', {
             init: function() {
                 // --- SETUP ---
                 const answerTextEl = document.querySelector('#answer-text');
                 const speechBubbleEl = document.querySelector('#speech-bubble');
-                const speechBubbleBgEl = document.querySelector('#speech-bubble-bg');
                 const robotHeadEl = document.querySelector('#robot-head');
                 const sceneEl = this.el;
                 const knowledgePanelEl = document.querySelector('#knowledge-panel');
-                const vrMicIndicator = document.querySelector('#vr-mic-indicator');
-                const vrMicBg = document.querySelector('#vr-mic-bg');
-                
+                const cursorEl = document.querySelector('#cursor');
+
                 // UI Elements
-                const micButton = document.getElementById('mic-button');
-                const initialInstruction = document.getElementById('initial-instruction');
+                const startBtn = document.getElementById('start-btn');
+                const keyboardContainer = document.getElementById('keyboard-input-container');
+                const textInput = document.getElementById('text-input');
+                const sendBtn = document.getElementById('send-btn');
                 
                 let conversationState = 'IDLE';
                 let userName = '';
                 let typeInterval;
 
-                // --- Q&A DATABASE (Local Knowledge) ---
+                // --- Q&A DATABASE (Categorized) ---
                 const qaDatabase = {
-                    "Dasar Bencana": { "Apa itu bencana alam?": "Bencana alam adalah kejadian besar dari alam yang bisa merusak lingkungan dan membahayakan orang.", "Apa itu mitigasi bencana?": "Mitigasi bencana adalah usaha untuk mengurangi risiko bahaya sebelum bencana terjadi.", "Kenapa kita harus belajar tentang bencana?": "Supaya kita tahu cara melindungi diri dan membantu orang lain.", "Apa itu evakuasi?": "Evakuasi adalah pindah ke tempat aman saat ada bahaya.", "Apa itu jalur evakuasi?": "Jalan atau rute yang harus dilalui untuk menuju tempat aman." },
-                    "Gempa & Gunung": { "Apa itu gempa bumi?": "Getaran di permukaan bumi karena pergerakan lempeng bumi.", "Apa yang harus dilakukan saat gempa bumi?": "Segera lindungi kepala, bersembunyi di bawah meja, dan jangan panik.", "Bagaimana cara aman keluar saat gempa di sekolah?": "Ikuti guru, jangan berlari, dan jaga jarak dari bangunan.", "Bagaimana tanda-tanda gunung akan meletus?": "Ada getaran, suara gemuruh, dan asap keluar dari puncak gunung." },
-                    "Banjir & Kebakaran": { "Kalau ada banjir, apa yang harus kita lakukan?": "Pindah ke tempat yang lebih tinggi dan aman, jangan main di air banjir.", "Apa yang tidak boleh dilakukan saat banjir?": "Jangan bermain di air banjir, jangan mendekati tiang listrik.", "Kalau ada kebakaran, apa yang harus dilakukan?": "Segera keluar dari bangunan, tutup hidung dan mulut dengan kain basah." },
-                    "Tindakan Penting": { "Apa itu tas siaga bencana?": "Tas berisi barang penting yang siap dibawa saat bencana.", "Apa yang harus dibawa saat mengungsi?": "Bawa barang penting seperti air minum, makanan, obat, dan pakaian secukupnya.", "Mengapa kita tidak boleh panik?": "Karena panik membuat kita sulit berpikir dan bertindak dengan benar.", "Bagaimana cara membantu teman saat bencana?": "Ajak dia ke tempat aman dan beri semangat.", "Kalau terpisah dari orang tua, apa yang harus dilakukan?": "Pergi ke posko atau tempat berkumpul yang aman." }
+                    "Dasar Bencana": {
+                        "Apa itu bencana alam?": "Bencana alam adalah kejadian besar dari alam yang bisa merusak lingkungan dan membahayakan orang.",
+                        "Apa itu mitigasi bencana?": "Mitigasi bencana adalah usaha untuk mengurangi risiko bahaya sebelum bencana terjadi.",
+                        "Kenapa kita harus belajar tentang bencana?": "Supaya kita tahu cara melindungi diri dan membantu orang lain.",
+                        "Apa itu evakuasi?": "Evakuasi adalah pindah ke tempat aman saat ada bahaya.",
+                        "Apa itu jalur evakuasi?": "Jalan atau rute yang harus dilalui untuk menuju tempat aman."
+                    },
+                    "Gempa & Gunung": {
+                        "Apa itu gempa bumi?": "Getaran di permukaan bumi karena pergerakan lempeng bumi.",
+                        "Apa yang harus dilakukan saat gempa bumi?": "Segera lindungi kepala, bersembunyi di bawah meja, dan jangan panik.",
+                        "Bagaimana cara aman keluar saat gempa di sekolah?": "Ikuti guru, jangan berlari, dan jaga jarak dari bangunan.",
+                        "Bagaimana tanda-tanda gunung akan meletus?": "Ada getaran, suara gemuruh, dan asap keluar dari puncak gunung."
+                    },
+                    "Banjir & Kebakaran": {
+                        "Kalau ada banjir, apa yang harus kita lakukan?": "Pindah ke tempat yang lebih tinggi dan aman, jangan main di air banjir.",
+                        "Apa yang tidak boleh dilakukan saat banjir?": "Jangan bermain di air banjir, jangan mendekati tiang listrik.",
+                        "Kalau ada kebakaran, apa yang harus dilakukan?": "Segera keluar dari bangunan, tutup hidung dan mulut dengan kain basah."
+                    },
+                    "Tindakan Penting": {
+                        "Apa itu tas siaga bencana?": "Tas berisi barang penting yang siap dibawa saat bencana.",
+                        "Apa yang harus dibawa saat mengungsi?": "Bawa barang penting seperti air minum, makanan, obat, dan pakaian secukupnya.",
+                        "Mengapa kita tidak boleh panik?": "Karena panik membuat kita sulit berpikir dan bertindak dengan benar.",
+                        "Bagaimana cara membantu teman saat bencana?": "Ajak dia ke tempat aman dan beri semangat.",
+                        "Kalau terpisah dari orang tua, apa yang harus dilakukan?": "Pergi ke posko atau tempat berkumpul yang aman."
+                    }
                 };
-                
-                const storyPrompts = { "Buat Cerita ✨": { "Cerita tentang Gempa": "gempa bumi", "Cerita tentang Banjir": "banjir", "Cerita tentang Gunung Meletus": "gunung meletus", "Cerita tentang Kebakaran": "kebakaran" } };
 
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 const speechSynthesis = window.speechSynthesis;
                 let recognition;
-                let indonesianVoice = null;
 
-                function findIndonesianVoice() {
-                    const voices = speechSynthesis.getVoices();
-                    indonesianVoice = voices.find(voice => voice.lang === 'id-ID') || voices.find(voice => voice.name.includes('Indonesian'));
-                }
-                findIndonesianVoice();
-                if (speechSynthesis.onvoiceschanged !== undefined) {
-                    speechSynthesis.onvoiceschanged = findIndonesianVoice;
-                }
+                let isListening = false;
+                let canListen = false;
 
-                const disablePanels = () => { knowledgePanelEl.setAttribute('visible', 'false'); knowledgePanelEl.querySelectorAll('a-entity').forEach(p => p.classList.remove('clickable')); };
-                const enablePanels = () => { knowledgePanelEl.setAttribute('visible', 'true'); knowledgePanelEl.querySelectorAll('a-entity').forEach(p => p.classList.add('clickable')); };
+                const disablePanels = () => {
+                    knowledgePanelEl.setAttribute('visible', 'false');
+                    knowledgePanelEl.querySelectorAll('a-entity').forEach(panel => {
+                        panel.classList.remove('clickable');
+                    });
+                };
+
+                const enablePanels = () => {
+                    knowledgePanelEl.setAttribute('visible', 'true');
+                        knowledgePanelEl.querySelectorAll('a-entity').forEach(panel => {
+                        panel.classList.add('clickable');
+                    });
+                };
+
+                const startListening = () => {
+                    if (!recognition || isListening || !canListen) return;
+                    try {
+                        recognition.start();
+                        isListening = true;
+                        console.log("Mulai mendengarkan...");
+                    } catch(e) { console.error("Error starting recognition:", e); }
+                };
 
                 const typeText = (text) => {
                     clearInterval(typeInterval);
                     answerTextEl.setAttribute('value', '');
                     let i = 0;
-                    typeInterval = setInterval(() => { if (i < text.length) { answerTextEl.setAttribute('value', text.substring(0, i + 1)); i++; } else { clearInterval(typeInterval); } }, 40);
+                    typeInterval = setInterval(() => {
+                        if (i < text.length) {
+                            answerTextEl.setAttribute('value', text.substring(0, i + 1));
+                            i++;
+                        } else {
+                            clearInterval(typeInterval);
+                        }
+                    }, 50);
                 };
                 
-                const updateSpeechBubble = (text) => {
-                    const textWidth = 2.3;
-                    const wrapCount = 35;
-                    const baseHeight = 0.6;
-                    const heightPerLine = 0.2;
-                    
-                    const lines = Math.ceil(text.length / wrapCount * (textWidth / 1.5));
-                    const newHeight = baseHeight + (lines * heightPerLine);
-
-                    speechBubbleBgEl.setAttribute('height', newHeight);
-                    speechBubbleEl.setAttribute('visible', 'true');
-                    typeText(text);
-                };
-
                 const giveAnswer = (answer, onEndCallback) => {
+                    canListen = false;
+                    if (isListening) { recognition.stop(); isListening = false; }
                     disablePanels();
-                    updateSpeechBubble(answer);
-                    robotHeadEl.setAttribute('animation', { property: 'rotation', to: '0 -10 0', dir: 'alternate', loop: true, dur: 500 });
+
+                    typeText(answer); 
+                    speechBubbleEl.setAttribute('visible', 'true'); 
+
+                    robotHeadEl.setAttribute('animation', {
+                        property: 'rotation', to: '0 -10 0', dir: 'alternate', loop: true, dur: 500
+                    });
                     
                     const utterance = new SpeechSynthesisUtterance(answer);
                     utterance.lang = 'id-ID';
-                    utterance.pitch = 1;
-                    utterance.rate = 1;
-                    if (indonesianVoice) utterance.voice = indonesianVoice;
-
-                    utterance.onend = () => { robotHeadEl.removeAttribute('animation'); robotHeadEl.setAttribute('rotation', '0 0 0'); if (onEndCallback) onEndCallback(); };
+                    utterance.pitch = 0.5;
+                    utterance.rate = 0.8;
+                    
+                    utterance.onend = function() {
+                        robotHeadEl.removeAttribute('animation');
+                        robotHeadEl.setAttribute('rotation', '0 0 0');
+                        if (onEndCallback) {
+                            onEndCallback();
+                        }
+                    };
                     speechSynthesis.speak(utterance);
                 };
 
                 const getGenerativeAnswer = async (question) => {
-                    giveAnswer("Hmm, sebentar ya, aku pikirkan dulu...", () => showCategoryPanels());
-                    const prompt = `Jawab pertanyaan ini dengan singkat dan sederhana untuk anak SD (maksimal 2 kalimat): ${question}`;
+                    giveAnswer("Hmm, sebentar ya, aku pikirkan dulu...", () => {});
+                    
+                    const apiUrl = '/api/generate';
+                    
                     try {
-                        const response = await fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
-                        if (!response.ok) throw new Error(`API request failed`);
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ question: question })
+                        });
+
+                        if (!response.ok) {
+                           const errorResult = await response.json();
+                           console.error("API Error Response:", errorResult);
+                           throw new Error(`API request failed with status ${response.status}`);
+                        }
+
                         const result = await response.json();
-                        giveAnswer(result.answer, () => showCategoryPanels());
+                        const text = result.answer;
+                        
+                        giveAnswer(text, () => {
+                            canListen = true;
+                            startListening();
+                            showCategoryPanels();
+                        });
+
                     } catch (error) {
-                        console.error("Error fetching from API:", error);
-                        giveAnswer("Aduh, otakku sedang istirahat. Coba lagi nanti ya.", () => showCategoryPanels());
+                        console.error("Error fetching from backend:", error);
+                        giveAnswer("Aduh, otakku sedang istirahat. Coba lagi nanti ya.", () => {
+                            canListen = true;
+                            startListening();
+                            showCategoryPanels();
+                        });
+                    }
+                };
+                
+                // ======================================================================
+                // === FUNGSI INI TELAH DIPERBARUI DENGAN LOGIKA DETEKSI KATEGORI ===
+                // ======================================================================
+                const processCommand = (command, isFromPanel = false) => {
+                    command = command.toLowerCase().trim();
+                    console.log('Perintah diterima:', command);
+
+                    if (conversationState === 'WAITING_FOR_NAME') {
+                        userName = command.split(' ').pop(); 
+                        userName = userName.charAt(0).toUpperCase() + userName.slice(1);
+                        const greetingText = `Halo, ${userName}! Senang bertemu denganmu. Pilih kategori yang ingin kamu pelajari.`;
+                        giveAnswer(greetingText, () => {
+                            conversationState = 'QNA';
+                            canListen = true;
+                            startListening();
+                            showCategoryPanels();
+                        });
+                    } else if (conversationState === 'QNA') {
+                        let foundAnswer = null;
+                        
+                        if (isFromPanel) {
+                            // Logika ini tetap sama, untuk klik panel pertanyaan
+                            for (const category in qaDatabase) {
+                                if (qaDatabase[category][command]) {
+                                    foundAnswer = qaDatabase[category][command];
+                                    break;
+                                }
+                            }
+                        } else {
+                            // --- LOGIKA BARU DIMULAI DI SINI (untuk input suara) ---
+
+                            // BARU: Langkah 1 - Cek apakah pengguna menyebutkan nama kategori
+                            let foundCategory = null;
+                            for (const categoryName in qaDatabase) {
+                                // Buat keyword dari nama kategori (misal: "banjir", "kebakaran" dari "Banjir & Kebakaran")
+                                const keywords = categoryName.toLowerCase().replace('&', '').split(' ');
+                                // Cek apakah command dari user mengandung salah satu keyword kategori
+                                const isMatch = keywords.some(keyword => keyword.length > 2 && command.includes(keyword));
+
+                                if (isMatch) {
+                                    foundCategory = categoryName;
+                                    break; // Kategori ditemukan, hentikan pencarian
+                                }
+                            }
+
+                            // BARU: Jika kategori ditemukan, tampilkan panel pertanyaannya dan hentikan proses.
+                            if (foundCategory) {
+                                console.log(`Kategori terdeteksi: ${foundCategory}`);
+                                showQuestionPanels(foundCategory);
+                                return; // Keluar dari fungsi agar tidak lanjut ke Gemini API
+                            }
+
+                            // LAMA: Langkah 2 - Jika bukan kategori, baru cek apakah itu pertanyaan spesifik
+                            for (const category in qaDatabase) {
+                                for (const question in qaDatabase[category]) {
+                                    if (command.includes(question.toLowerCase())) {
+                                        foundAnswer = qaDatabase[category][question];
+                                        break;
+                                    }
+                                }
+                                if(foundAnswer) break;
+                            }
+                            // --- AKHIR DARI LOGIKA BARU ---
+                        }
+                        
+                        if (foundAnswer) {
+                            giveAnswer(foundAnswer, () => {
+                                canListen = true;
+                                startListening();
+                                showCategoryPanels();
+                            });
+                        } else {
+                            // Langkah 3 - Jika sama sekali tidak ditemukan, baru lempar ke AI
+                            // Pastikan ini tidak dijalankan jika datang dari klik panel
+                            if (!isFromPanel) {
+                                getGenerativeAnswer(command);
+                            }
+                        }
                     }
                 };
 
-                const getGenerativeStory = async (topic) => {
-                    giveAnswer(`Oke, aku akan coba buatkan cerita tentang ${topic}...`, null);
-                    const prompt = `Buatkan cerita anak-anak untuk anak SD, sekitar 3 paragraf pendek, tentang ${topic}. Ceritanya harus mendidik, menceritakan apa yang harus dilakukan dengan cara yang positif dan tidak menakutkan. Gunakan tokoh anak-anak seperti Budi atau Ani.`;
-                    try {
-                        const response = await fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
-                        if (!response.ok) throw new Error(`API request failed`);
-                        const result = await response.json();
-                        giveAnswer(result.answer, () => showCategoryPanels());
-                    } catch (error) {
-                        console.error("Error fetching story from API:", error);
-                        giveAnswer("Aduh, imajinasiku sedang macet. Coba lagi nanti ya.", () => showCategoryPanels());
+                const clearPanels = () => {
+                    while (knowledgePanelEl.firstChild) {
+                        knowledgePanelEl.removeChild(knowledgePanelEl.firstChild);
                     }
-                };
-                
-                const processCommand = (command) => {
-                    const lowerCaseCommand = command.toLowerCase().trim();
-                    if (conversationState === 'IDLE') {
-                        conversationState = 'INTRODUCTION';
-                        const introText = "Halo, namaku Ros. Aku robot asisten untuk membantumu memahami bencana. Kalau boleh tahu, nama kamu siapa?";
-                        giveAnswer(introText, () => { conversationState = 'WAITING_FOR_NAME'; });
-                        return;
-                    }
-                    if (conversationState === 'WAITING_FOR_NAME') {
-                        userName = command.split(' ').pop(); userName = userName.charAt(0).toUpperCase() + userName.slice(1);
-                        const greetingText = `Halo, ${userName}! Senang bertemu denganmu. Pilih kategori yang ingin kamu pelajari.`;
-                        giveAnswer(greetingText, () => { conversationState = 'QNA'; showCategoryPanels(); });
-                    } else if (conversationState === 'QNA') {
-                        let foundAnswer = null;
-                        for (const category in qaDatabase) { if (qaDatabase[category][command]) { foundAnswer = qaDatabase[category][command]; break; } }
-                        if (!foundAnswer) { for (const category in qaDatabase) { for (const question in qaDatabase[category]) { if (lowerCaseCommand.includes(question.toLowerCase().substring(0,15))) { foundAnswer = qaDatabase[category][question]; break; } } if(foundAnswer) break; } }
-                        if (foundAnswer) { giveAnswer(foundAnswer, () => showCategoryPanels()); } else { getGenerativeAnswer(command); }
-                    }
-                };
-                
-                const clearPanels = () => { while (knowledgePanelEl.firstChild) { knowledgePanelEl.removeChild(knowledgePanelEl.firstChild); } };
-                
-                const createPanel = (config) => {
-                    const panel = document.createElement('a-entity');
-                    panel.setAttribute('class', 'clickable');
-                    panel.setAttribute('position', config.position);
-                    panel.innerHTML = `<a-plane color="${config.color}" width="${config.width || 3}" height="${config.height || 0.5}" rounded="0.1"></a-plane><a-text value="${config.text}" color="${config.textColor || '#FFFFFF'}" width="${(config.width || 3) - 0.2}" align="center" position="0 0 0.01"></a-text>`;
-                    panel.addEventListener('click', config.onClick);
-                    knowledgePanelEl.appendChild(panel);
                 };
 
                 const showQuestionPanels = (category) => {
                     clearPanels();
-                    const questions = qaDatabase[category]; const questionKeys = Object.keys(questions);
-                    questionKeys.forEach((q, i) => createPanel({ position: `0 ${1.2 - i * 0.55} 0`, color: '#3498DB', text: q, onClick: () => processCommand(q) }));
-                    createPanel({ position: `0 ${1.2 - questionKeys.length * 0.55} 0`, color: '#E74C3C', text: 'Kembali', onClick: showCategoryPanels });
-                    enablePanels();
-                };
+                    const questions = qaDatabase[category];
+                    const questionKeys = Object.keys(questions);
+                    
+                    questionKeys.forEach((question, index) => {
+                        const panel = document.createElement('a-entity');
+                        panel.setAttribute('class', 'clickable');
+                        panel.setAttribute('position', `0 ${1.2 - index * 0.55} 0`);
+                        panel.innerHTML = `
+                            <a-plane color="#3498DB" width="3" height="0.5" rounded="0.1"></a-plane>
+                            <a-text value="${question}" color="#FFFFFF" width="2.8" align="center" position="0 0 0.01"></a-text>
+                        `;
+                        panel.addEventListener('click', () => processCommand(question, true));
+                        knowledgePanelEl.appendChild(panel);
+                    });
 
-                const showStoryPromptPanels = () => {
-                    clearPanels();
-                    const prompts = storyPrompts["Buat Cerita ✨"]; const promptKeys = Object.keys(prompts);
-                    promptKeys.forEach((p, i) => createPanel({ position: `0 ${1.2 - i * 0.55} 0`, color: '#FFC300', text: p, textColor: '#333', onClick: () => getGenerativeStory(prompts[p]) }));
-                    createPanel({ position: `0 ${1.2 - promptKeys.length * 0.55} 0`, color: '#E74C3C', text: 'Kembali', onClick: showCategoryPanels });
+                    // Add a back button
+                    const backButton = document.createElement('a-entity');
+                    backButton.setAttribute('class', 'clickable');
+                    backButton.setAttribute('position', `0 ${1.2 - questionKeys.length * 0.55} 0`);
+                    backButton.innerHTML = `
+                        <a-plane color="#E74C3C" width="3" height="0.5" rounded="0.1"></a-plane>
+                        <a-text value="Kembali" color="#FFFFFF" width="2.8" align="center" position="0 0 0.01"></a-text>
+                    `;
+                    backButton.addEventListener('click', showCategoryPanels);
+                    knowledgePanelEl.appendChild(backButton);
+
                     enablePanels();
                 };
                 
                 const showCategoryPanels = () => {
                     clearPanels();
-                    const categories = [...Object.keys(qaDatabase), "Buat Cerita ✨"];
-                    categories.forEach((cat, i) => {
-                        const isStory = cat === "Buat Cerita ✨";
-                        createPanel({
-                            position: `${(i - (categories.length - 1) / 2) * 2.5} 1.5 0`,
-                            color: isStory ? "#9B59B6" : "#2ECC71",
-                            text: cat, width: 2.2, height: 0.6,
-                            onClick: () => isStory ? showStoryPromptPanels() : showQuestionPanels(cat)
-                        });
+                    const categories = Object.keys(qaDatabase);
+                    categories.forEach((category, index) => {
+                        const panel = document.createElement('a-entity');
+                        panel.setAttribute('class', 'clickable');
+                        panel.setAttribute('position', `${(index - 1.5) * 2.5} 1.5 0`);
+                        panel.innerHTML = `
+                            <a-plane color="#2ECC71" width="2.2" height="0.6" rounded="0.1"></a-plane>
+                            <a-text value="${category}" color="#FFFFFF" width="2" align="center" position="0 0 0.01"></a-text>
+                        `;
+                        panel.addEventListener('click', () => showQuestionPanels(category));
+                        knowledgePanelEl.appendChild(panel);
                     });
                     enablePanels();
                 };
 
-                const startRecognition = () => {
-                     if (!SpeechRecognition) {
+                const handleIntroduction = () => {
+                    conversationState = 'INTRODUCTION';
+                    const introText = "Halo, namaku Ros. Aku robot asisten untuk membantumu memahami bencana.";
+                    giveAnswer(introText, () => {
+                        const askNameText = "Kalau boleh tahu, nama kamu siapa?";
+                        giveAnswer(askNameText, () => {
+                            conversationState = 'WAITING_FOR_NAME';
+                            canListen = true;
+                            startListening();
+                        });
+                    });
+                };
+
+                // --- EVENT LISTENERS ---
+                startBtn.addEventListener('click', () => {
+                    if (!SpeechRecognition || !speechSynthesis) {
                         alert("Maaf, browser ini tidak mendukung fitur suara.");
                         return;
                     }
+                    recognition = new SpeechRecognition();
+                    recognition.lang = 'id-ID';
+                    recognition.interimResults = false;
+                    recognition.continuous = true;
 
-                    if (!recognition) {
-                        recognition = new SpeechRecognition();
-                        recognition.lang = 'id-ID';
-                        recognition.interimResults = false;
-                        recognition.continuous = false;
-                        
-                        recognition.onstart = () => {
-                            micButton.classList.add('listening');
-                            vrMicBg.setAttribute('color', '#F44336'); // Feedback di VR
-                            vrMicIndicator.setAttribute('animation', { property: 'scale', to: '1.2 1.2 1.2', dir: 'alternate', loop: true, dur: 750 });
-                        };
-                        
-                        recognition.onend = () => {
-                            micButton.classList.remove('listening');
-                            vrMicBg.setAttribute('color', '#4CAF50'); // Kembali normal di VR
-                            vrMicIndicator.removeAttribute('animation');
-                            vrMicIndicator.setAttribute('scale', '1 1 1');
-                        };
-                        
-                        recognition.onresult = (event) => {
-                            const command = event.results[event.results.length - 1][0].transcript;
-                            processCommand(command);
-                        };
-                        
-                        recognition.onerror = (event) => console.error('Speech recognition error:', event.error);
+                    recognition.onresult = (event) => {
+                        const last = event.results.length - 1;
+                        const command = event.results[last][0].transcript;
+                        processCommand(command);
+                    };
+                    recognition.onerror = (event) => {
+                        console.error('Speech recognition error:', event.error);
+                        isListening = false;
+                    };
+                    recognition.onend = () => {
+                        isListening = false;
+                        if (canListen) { startListening(); }
+                    };
+
+                    handleIntroduction();
+                    startBtn.style.display = 'none';
+                });
+
+                sendBtn.addEventListener('click', () => {
+                    const command = textInput.value;
+                    if (command) {
+                        if (conversationState === 'IDLE') {
+                           handleIntroduction();
+                        } else {
+                           processCommand(command);
+                        }
+                        textInput.value = '';
+                        startBtn.style.display = 'none';
                     }
-                    
-                    // Sembunyikan UI awal setelah interaksi pertama
-                    initialInstruction.classList.add('hidden');
-                    micButton.classList.add('hidden');
+                });
 
-                    recognition.start();
-                };
+                textInput.addEventListener('keyup', (event) => {
+                    if (event.key === 'Enter') { sendBtn.click(); }
+                });
 
-                // Tombol HTML memicu fungsi utama
-                micButton.addEventListener('click', startRecognition);
-                // Tombol VR (gaze) juga memicu fungsi utama
-                vrMicIndicator.addEventListener('click', startRecognition);
+                sceneEl.addEventListener('enter-vr', () => {
+                    keyboardContainer.style.display = 'none';
+                });
 
-
-                disablePanels();
+                sceneEl.addEventListener('exit-vr', () => {
+                    keyboardContainer.style.display = 'block';
+                });
+                
+                disablePanels(); // Start with panels disabled
             }
         });
     </script>
 </head>
-<body>
+<body style="margin : 0px; overflow: hidden;">
     
-    <!-- UI Overlay untuk Tombol Mikrofon dan Instruksi Awal -->
-    <div id="ui-overlay">
-        <div id="initial-instruction">Ketuk ikon mic untuk memulai</div>
-        <div id="mic-button" title="Ketuk untuk Bicara">
-            <svg id="mic-icon" viewBox="0 0 24 24">
-                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z"/>
-            </svg>
+    <div id="ui-container">
+        <button id="start-btn">Mulai Bicara dengan Ros</button>
+        <div id="keyboard-input-container">
+            <input type="text" id="text-input" placeholder="Ketik nama atau pertanyaanmu...">
+            <button id="send-btn">Kirim</button>
         </div>
     </div>
 
     <a-scene background="color: #87CEEB" voice-listener>
         <a-camera>
-            <a-cursor id="cursor" raycaster="objects: .clickable" fuse="true" fuse-timeout="2000">
+            <a-cursor id="cursor"
+                      raycaster="objects: .clickable"
+                      fuse="true"
+                      fuse-timeout="1500">
                 <a-entity
                     geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03; thetaLength: 0"
                     material="color: #007BFF; shader: flat; opacity: 0.8"
-                    animation__fusing="property: geometry.thetaLength; from: 0; to: 360; startEvents: fusing; dur: 2000; easing: linear"
+                    animation__fusing="property: geometry.thetaLength; from: 0; to: 360; startEvents: fusing; dur: 1500; easing: linear"
                     animation__reset="property: geometry.thetaLength; to: 0; startEvents: mouseleave; dur: 0">
                 </a-entity>
             </a-cursor>
-
-            <!-- PERBAIKAN: Indikator/Tombol Mikrofon di dalam VR -->
-            <a-entity id="vr-mic-indicator" class="clickable" position="0 -0.8 -1.5" visible="true">
-                <a-plane id="vr-mic-bg" width="0.3" height="0.3" color="#4CAF50" opacity="0.8" rounded="0.15"></a-plane>
-                <a-entity geometry="primitive: plane; width: 0.2; height: 0.2" material="src: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0xMiAxNGMxLjY2IDAgMy0xLjM0IDMtM1Y1YzAtMS42Ni0xLjM0LTMtMy0zUzkgMy4zNCA5IDV2NmMwIDEuNjYgMS4zNCAzIDMgM3ptNS4zLTNjMCAzLTIuNTQgNS4xLTUuMyA1LjFTNi43IDE0IDYuNyAxMUg1YzAgMy40MSAyLjcyIDYuMjMgNiA2LjcyVjIxaDJ2LTMuMjhjMy4yOC0uNDkgNi0zLjMxIDYtNi43MmgtMS43eiIvPjwvc3ZnPg==); transparent: true;" position="0 0 0.01"></a-entity>
-            </a-entity>
-
         </a-camera>
 
         <a-light type="ambient" color="#AAA"></a-light>
         <a-light type="directional" intensity="0.5" position="-1 1 2"></a-light>
 
-        <a-entity id="knowledge-panel" position="0 0 -2.5" visible="false"></a-entity>
+        <a-entity id="knowledge-panel" position="0 0.2 -3.5" visible="false"></a-entity>
 
-        <a-entity id="robot" position="0 0.7 -3">
+        <a-entity id="robot" position="0 0.7 -3" rotation="0 0 0">
             <a-text value="Ros" color="#333" position="0 2.1 0" align="center" width="5"></a-text>
+            
             <a-entity id="speech-bubble" position="0 2.5 0" visible="false">
-                <a-plane id="speech-bubble-bg" color="#FFFFFF" width="2.5" height="1" rounded="0.2" position="0 0 -0.01"></a-plane>
+                <a-plane color="#FFFFFF" width="2.5" height="1" rounded="0.2" position="0 0 -0.01"></a-plane>
                 <a-triangle color="#FFFFFF" vertex-a="0 -0.5 0" vertex-b="-0.2 -0.7 0" vertex-c="0.2 -0.7 0"></a-triangle>
-                <a-text id="answer-text" value="" color="#00008B" width="2.3" align="left" wrap-count="35"></a-text>
+                <a-text id="answer-text" value="" color="#00008B" width="2.3" align="center" wrap-count="35"></a-text>
             </a-entity>
+
             <a-entity id="robot-head" position="0 1.2 0">
                 <a-box position="0 0 0" width="0.9" height="0.8" depth="0.8" color="#FFFFFF" shadow>
                     <a-box position="0 0 0.41" width="0.7" height="0.6" depth="0.05" color="#87CEEB"></a-box>
@@ -357,9 +471,12 @@
                     <a-cylinder position="0.3 0.1 0" radius="0.01" height="0.3" color="#FFC107"></a-cylinder>
                 </a-entity>
             </a-entity>
+            
             <a-box id="robot-body" position="0 0.5 0" width="0.6" height="0.8" depth="0.6" color="#BDC3C7" shadow></a-box>
+            
             <a-cylinder position="-0.4 0.6 0" radius="0.1" height="0.4" color="#FFFFFF" rotation="0 0 30" shadow></a-cylinder>
             <a-cylinder position="0.4 0.6 0" radius="0.1" height="0.4" color="#FFFFFF" rotation="0 0 -30" shadow></a-cylinder>
+
             <a-cylinder position="-0.15 0 0" radius="0.15" height="0.2" color="#FFFFFF" shadow></a-cylinder>
             <a-cylinder position="0.15 0 0" radius="0.15" height="0.2" color="#FFFFFF" shadow></a-cylinder>
         </a-entity>
