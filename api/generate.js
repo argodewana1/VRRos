@@ -1,34 +1,80 @@
 // File: /api/generate.js
+// VERSI BARU DENGAN KONTEKS DAN PERSONA ROS
 
 export default async function handler(req, res) {
+    // 1. Hanya izinkan metode POST
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
+    // 2. Dapatkan API Key dari Vercel Environment Variables
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
         return res.status(500).json({ error: 'API key not configured' });
     }
 
+    // 3. Dapatkan pertanyaan dari body request frontend
     const { question } = req.body;
     if (!question) {
         return res.status(400).json({ error: 'Question is required' });
     }
 
-    const prompt = `Jelaskan untuk anak SD dengan cara yang sederhana, singkat, dan mudah dimengerti: ${question}`;
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+    // --- PERUBAHAN UTAMA DIMULAI DI SINI ---
+
+    // 4. Tentukan Model dan URL API
+    const modelId = "gemma-3-1b-it";
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+
+    // 5. Buat Request Body yang baru sesuai format multi-turn Anda
+    const requestBody = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {
+                        "inlineData": {
+                            "mimeType": "text/csv",
+                            // Ini adalah data pengetahuan Anda dari qaDatabase yang di-encode ke Base64
+                            "data": "UGVydGFueWFhbixKYXdhYmFuCkFwYSBpdHUgYmVuY2FuYSBhbGFtPywiQmVuY2FuYSBhbGFtIGFkYWxhaCBrZWphZGlhbiBiZXNhciBkYXJpIGFsYW0geWFuZyBiaXNhIG1lcnVzYWsgbGluZ2t1bmdhbiBkYW4gbWVtYmFoYXlha2FuIG9yYW5nLCBzZXBlcnRpIGdlbXBhLCBiYW5qaXIsIGF0YXUgZ3VudW5nIG1lbGV0dXMuIgpBcGEgaXR1IG1pdGlnYXNpIGJlbmNhbmE/LE1pdGlnYXNpIGJlbmNhbmEgYWRhbGFoIHVzYWhhIHVudHVrIG1lbmd1cmFuZ2kgcmlzaWtvIGJhaGF5YSBzZWJlbHVtIGJlbmNhbmEgdGVyamFkaS4KS2VuYXBhIGtpdGEgaGFydXMgYmVsYWphciB0ZW50YW5nIGJlbmNhbmE/LFN1cGF5YSBraXRhIHRhaHUgY2FyYSBtZWxpbmR1bmdpIGRpcmkgZGFuIG1lbWJhbnR1IG9yYW5nIGxhaW4uCkFwYSB5YW5nIGhhcnVzIGRpbGFrdWthbiBzYWF0IGdlbXBhIGJ1bWk/LCJTZWdlcmEgbGluZHVuZ2kga2VwYWxhLCBiZXJzZW1idW55aSBkaSBiYXdhaCBtZWphLCBkYW4gamFuZ2FuIHBhbmlrLiIKIkthbGF1IGFkYSBiYW5qaXIsIGFwYSB5YW5nIGhhcnVzIGtpdGEgbGFrdWthbj8iLCJQaW5kYWgga2UgdGVtcGF0IHlhbmcgbGViaWggdGluZ2dpIGRhbiBhbWFuLCBqYW5nYW4gbWFpbiBkaSBhaXIgYmFuamlyLiIKQmFnYWltYW5hIHRhbmRhLXRhbmRhIGd1bnVuZyBha2FuIG1lbGV0dXM/LCJBZGEgZ2V0YXJhbiwgc3VhcmEgZ2VtdXJ1aCwgZGFuIGFzYXAga2VsdWFyIGRhcmkgcHVuY2FrIGd1bnVuZy4iCkFwYSBpdHUgZXZha3Vhc2k/LEV2YWt1YXNpIGFkYWxhaCBwaW5kYWgga2UgdGVtcGF0IGFtYW4gc2FhdCBhZGEgYmFoYXlhLgoiS2FsYXUgYWRhIHNpcmluZSBwZXJpbmdhdGFuLCBhcnRpbnlhIGFwYT8iLCJJdHUgdGFuZGEgYWRhIGJhaGF5YSwga2l0YSBoYXJ1cyBzZWdlcmEgbWVuZ2lrdXRpIHBldHVuanVrLiIKQXBhIHlhbmcgaGFydXMgZGliYXdhIHNhYXQgbWVuZ3VuZ3NpPywiQmF3YSBiYXJhbmcgcGVudGluZyBzZXBlcnRpIGFpciBtaW51bSwgbWFrYW5hbiwgb2JhdCwgZGFuIHBha2FpYW4gc2VjdWt1cG55YS4iCiJLYWxhdSBhZGEga2ViYWthcmFuLCBhcGEgeWFuZyBoYXJ1cyBkaWxha3VrYW4/IiwiU2VnZXJhIGtlbHVhciBkYXJpIGJhbmd1bmFuLCB0dXR1cCBoaWR1bmcgZGFuIG11bHV0IGRlbmdhbiBrYWluIGJhc2FoLiIKQXBhIGl0dSB0YXMgc2lhZ2EgYmVuY2FuYT8sVGFzIGJlcmlzaSBiYXJhbmcgcGVudGluZyB5YW5nIHNpYXAgZGliYXdhIHNhYXQgYmVuY2FuYS4KQmFnYWltYW5hIGNhcmEgYW1hbiBrZWx1YXIgc2FhdCBnZW1wYSBkaSBzZWtvbGFoPywiSWt1dGkgZ3VydSwgamFuZ2FuIGJlcmxhcmksIGRhbiBqYWdhIGphcmFrIGRhcmkgYmFuZ3VuYW4uIgpBcGEgeWFuZyB0aWRhayBib2xlaCBkaWxha3VrYW4gc2FhdCBiYW5qaXI/LCJKYW5nYW4gYmVybWFpbiBkaSBhaXIgYmFuamlyLCBqYW5nYW4gbWVuZGVrYXRpIHRpYW5nIGxpc3RyaWsuIgpCYWdhaW1hbmEgY2FyYSBtZW1iYW50dSB0ZW1hbiBzYWF0IGJlbmNhbmE/LEFqYWsgZGlhIGtlIHRlbXBhdCBhbWFuIGRhbiBiZXJpIHNlbWFuZ2F0LgpNZW5nYXBhIGtpdGEgdGlkYWsgYm9sZWggcGFuaWs/LEthcmVuYSBwYW5payBtZW1idWF0IGtpdGEgc3VsaXQgYmVycGlraXIgZGFuIGJlcnRpbmRhayBkZW5nYW4gYmVuYXIuCkFwYSBpdHUgamFsdXIgZXZha3Vhc2k/LEphbGFuIGF0YXUgcnV0ZSB5YW5nIGhhcnVzIGRpbGFsdWkgdW50dWsgbWVudWp1IHRlbXBhdCBhbWFuLgpCYWdhaW1hbmEgY2FyYSB0YWh1IGluZm9ybWFzaSBiZW5jYW5hPywiRGVuZ2FyIGRhcmlnIGd1cnUsIG9yYW5nIHR1YSwgcmFkabywgYXRhdSBzaXJpbmUuIgpBcGEgaXR1IGdlbXBhIGJ1bWk/LEdldGFyYW4gZGkgcGVybXVrYWFuIGJ1bWkga2FyZW5hIHBlcmdlcmFrYW4gbGVtcGVuZyBidW1pLgoiS2FsYXUga2l0YSB0ZXJwaXNhaCBkYXJpIG9yYW5nIHR1YSBzYWF0IGJlbmNhbmEsIGFwYSB5YW5nIGhhcnVzIGRpbGFrdWthbj8iLFBlcmdpIGtlIHBvc2tvIGF0YXUgdGVtcGF0IGJlcmt1bXB1bCB5YW5nIGFtYW4uCk1lbmdhcGEga2l0YSBoYXJ1cyBsYXRpaGFuIHNpbXVsYXNpIGJlbmNhbmE/LFN1cGF5YSBraXRhIHNpYXAgZGFuIHRhaHUgYXBhIHlhbmcgaGFydXMgZGlsYWt1a2FuIGppa2EgYmVuY2FuYSB0ZXJqYWRpLgo="
+                        }
+                    },
+                    {
+                        "text": "Kamu adalah ROS (Robot Of Safety), robot asisten interaktif yang ramah untuk anak-anak SD. \nTugasmu menjawab pertanyaan tentang bencana alam berdasarkan data yang diberikan. \nGunakan bahasa sederhana, jelas, dan menyenangkan. \nJika pertanyaan tidak terkait bencana, katakan dengan sopan bahwa kamu hanya bisa menjawab tentang bencana. \nAjak anak-anak untuk ikut berpikir, misalnya dengan memberi pertanyaan balik sederhana.\n"
+                    }
+                ]
+            },
+            {
+                "role": "model",
+                "parts": [
+                    {
+                        "text": "Oke, siap! Saya ROS, robot asisten interaktif yang ramah untuk anak-anak SD. Saya akan menjawab pertanyaan tentang bencana alam berdasarkan data yang kamu berikan.\n\nMari kita mulai! Apa yang ingin kamu tanyakan tentang bencana alam? Jangan ragu untuk bertanya, ya! 😊"
+                    }
+                ]
+            },
+            {
+                "role": "user",
+                "parts": [
+                    {
+                        // Di sini kita masukkan pertanyaan sebenarnya dari pengguna
+                        "text": question
+                    }
+                ]
+            }
+        ],
+        "generationConfig": {}
+    };
+
+    // --- AKHIR DARI PERUBAHAN UTAMA ---
+
 
     try {
+        // 6. Kirim request ke Gemini API dengan body yang baru
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: prompt }]
-                }]
-            }),
+            body: JSON.stringify(requestBody),
         });
 
         if (!response.ok) {
@@ -39,11 +85,18 @@ export default async function handler(req, res) {
 
         const result = await response.json();
 
+        // 7. Ekstrak teks jawaban dan kirim kembali ke frontend (cara ini masih sama)
         if (result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0]) {
             const answerText = result.candidates[0].content.parts[0].text;
             res.status(200).json({ answer: answerText });
         } else {
+            // Handle jika struktur response tidak sesuai atau tidak ada kandidat jawaban
             console.error('Unexpected Gemini API response structure:', result);
+            // Cek apakah ada promptFeedback, yang mungkin menandakan konten diblokir
+            if (result.promptFeedback) {
+                 console.error('Prompt Feedback:', result.promptFeedback);
+                 return res.status(500).json({ error: 'Jawaban diblokir karena alasan keamanan. Coba pertanyaan lain.' });
+            }
             res.status(500).json({ error: 'Failed to parse response from Gemini API' });
         }
 
