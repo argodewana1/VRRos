@@ -1,5 +1,5 @@
 // File: /api/generate.js
-// VERSI PERBAIKAN: Disederhanakan untuk stabilitas dan keandalan
+// VERSI PERBAIKAN: Menggunakan data CSV sebagai basis pengetahuan untuk AI
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -17,17 +17,49 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Question is required' });
     }
 
-    // Menggunakan model yang stabil dan terbukti
     const modelId = "gemini-1.5-flash-latest";
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
 
-    // --- PERUBAHAN UTAMA: Prompt disederhanakan ---
-    // Instruksi persona dan pertanyaan pengguna digabung menjadi satu prompt sederhana.
+    // --- PERUBAHAN UTAMA: Menambahkan data CSV ke dalam prompt ---
+    // Data ini berfungsi sebagai "otak" atau basis pengetahuan untuk Ros.
+    const knowledgeBase = `
+        Pertanyaan,Jawaban
+        Apa itu bencana alam?,"Bencana alam adalah kejadian besar dari alam yang bisa merusak lingkungan dan membahayakan orang, seperti gempa, banjir, atau gunung meletus."
+        Apa itu mitigasi bencana?,Mitigasi bencana adalah usaha untuk mengurangi risiko bahaya sebelum bencana terjadi.
+        Kenapa kita harus belajar tentang bencana?,Supaya kita tahu cara melindungi diri dan membantu orang lain.
+        Apa yang harus dilakukan saat gempa bumi?,"Segera lindungi kepala, bersembunyi di bawah meja, dan jangan panik."
+        "Kalau ada banjir, apa yang harus kita lakukan?","Pindah ke tempat yang lebih tinggi dan aman, jangan main di air banjir."
+        Bagaimana tanda-tanda gunung akan meletus?,"Ada getaran, suara gemuruh, dan asap keluar dari puncak gunung."
+        Apa itu evakuasi?,Evakuasi adalah pindah ke tempat aman saat ada bahaya.
+        "Kalau ada sirine peringatan, artinya apa?","Itu tanda ada bahaya, kita harus segera mengikuti petunjuk."
+        Apa yang harus dibawa saat mengungsi?,"Bawa barang penting seperti air minum, makanan, obat, dan pakaian secukupnya."
+        "Kalau ada kebakaran, apa yang harus dilakukan?","Segera keluar dari bangunan, tutup hidung dan mulut dengan kain basah."
+        Apa itu tas siaga bencana?,Tas berisi barang penting yang siap dibawa saat bencana.
+        Bagaimana cara aman keluar saat gempa di sekolah?,"Ikuti guru, jangan berlari, dan jaga jarak dari bangunan."
+        Apa yang tidak boleh dilakukan saat banjir?,"Jangan bermain di air banjir, jangan mendekati tiang listrik."
+        Bagaimana cara membantu teman saat bencana?,Ajak dia ke tempat aman dan beri semangat.
+        Mengapa kita tidak boleh panik?,Karena panik membuat kita sulit berpikir dan bertindak dengan benar.
+        Apa itu jalur evakuasi?,Jalan atau rute yang harus dilalui untuk menuju tempat aman.
+        Bagaimana cara tahu informasi bencana?,"Dengar dari guru, orang tua, radio, atau sirine."
+        Apa itu gempa bumi?,Getaran di permukaan bumi karena pergerakan lempeng bumi.
+        "Kalau kita terpisah dari orang tua saat bencana, apa yang harus dilakukan?",Pergi ke posko atau tempat berkumpul yang aman.
+        Mengapa kita harus latihan simulasi bencana?,Supaya kita siap dan tahu apa yang harus dilakukan jika bencana terjadi.
+    `;
+
+    // Prompt baru yang menginstruksikan AI untuk menggunakan knowledgeBase
     const fullPrompt = `
         Kamu adalah ROS (Robot Of Safety), robot asisten yang ramah untuk anak-anak SD.
-        Tugasmu adalah menjawab pertanyaan tentang kesiapsiagaan bencana.
-        Gunakan bahasa yang sederhana, singkat, jelas, dan menyenangkan.
-        Jika pertanyaan tidak terkait bencana, katakan dengan sopan bahwa kamu hanya bisa menjawab tentang bencana.
+        Tugasmu adalah menjawab pertanyaan tentang kesiapsiagaan bencana HANYA BERDASARKAN data CSV berikut.
+        
+        DATA PENGETAHUAN:
+        ---
+        ${knowledgeBase}
+        ---
+
+        Aturan:
+        1. Jawabanmu harus singkat, jelas, dan sesuai dengan data di atas.
+        2. Jangan menambah informasi di luar data tersebut.
+        3. Jika pertanyaan tidak bisa dijawab dari data, katakan dengan sopan: "Hmm, Ros belum belajar tentang itu. Coba tanya yang lain ya!"
         
         Jawab pertanyaan berikut: "${question}"
     `;
