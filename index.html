@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VR Robot Asisten Ros </title>
+    <meta name="description" content="An interactive VR disaster preparedness assistant robot named Ros, powered by Generative AI.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- A-Frame Library -->
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <style>
+        /* Styles for the UI overlay */
+        #ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #start-btn {
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 10px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            margin-bottom: 20px;
+        }
+        #keyboard-input-container {
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        #text-input {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-right: 10px;
+        }
+        #send-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            border: none;
+            background-color: #008CBA;
+            color: white;
+        }
+    </style>
+    <script>
+        // This component handles the voice recognition logic, TTS, and robot animation.
+        AFRAME.registerComponent('voice-listener', {
+            init: function() {
+                // --- SETUP ---
+                const answerTextEl = document.querySelector('#answer-text');
+                const speechBubbleEl = document.querySelector('#speech-bubble');
+                const robotHeadEl = document.querySelector('#robot-head');
+                const sceneEl = this.el;
+                const knowledgePanelEl = document.querySelector('#knowledge-panel');
+                const cursorEl = document.querySelector('#cursor');
+
+                // UI Elements
+                const startBtn = document.getElementById('start-btn');
+                const keyboardContainer = document.getElementById('keyboard-input-container');
+                const textInput = document.getElementById('text-input');
+                const sendBtn = document.getElementById('send-btn');
+                
+                let conversationState = 'IDLE';
+                let userName = '';
+                let typeInterval;
+
+                // --- Q&A DATABASE (Categorized) ---
+                const qaDatabase = {
+                    "Dasar Bencana": {
+                        "Apa itu bencana alam?": "Bencana alam adalah kejadian besar dari alam yang bisa merusak lingkungan dan membahayakan orang.",
+                        "Apa itu mitigasi bencana?": "Mitigasi bencana adalah usaha untuk mengurangi risiko bahaya sebelum bencana terjadi.",
+                        "Kenapa kita harus belajar tentang bencana?": "Supaya kita tahu cara melindungi diri dan membantu orang lain.",
+                        "Apa itu evakuasi?": "Evakuasi adalah pindah ke tempat aman saat ada bahaya.",
+                        "Apa itu jalur evakuasi?": "Jalan atau rute yang harus dilalui untuk menuju tempat aman."
+                    },
+                    "Gempa & Gunung": {
+                        "Apa itu gempa bumi?": "Getaran di permukaan bumi karena pergerakan lempeng bumi.",
+                        "Apa yang harus dilakukan saat gempa bumi?": "Segera lindungi kepala, bersembunyi di bawah meja, dan jangan panik.",
+                        "Bagaimana cara aman keluar saat gempa di sekolah?": "Ikuti guru, jangan berlari, dan jaga jarak dari bangunan.",
+                        "Bagaimana tanda-tanda gunung akan meletus?": "Ada getaran, suara gemuruh, dan asap keluar dari puncak gunung."
+                    },
+                    "Banjir & Kebakaran": {
+                        "Kalau ada banjir, apa yang harus kita lakukan?": "Pindah ke tempat yang lebih tinggi dan aman, jangan main di air banjir.",
+                        "Apa yang tidak boleh dilakukan saat banjir?": "Jangan bermain di air banjir, jangan mendekati tiang listrik.",
+                        "Kalau ada kebakaran, apa yang harus dilakukan?": "Segera keluar dari bangunan, tutup hidung dan mulut dengan kain basah."
+                    },
+                    "Tindakan Penting": {
+                        "Apa itu tas siaga bencana?": "Tas berisi barang penting yang siap dibawa saat bencana.",
+                        "Apa yang harus dibawa saat mengungsi?": "Bawa barang penting seperti air minum, makanan, obat, dan pakaian secukupnya.",
+                        "Mengapa kita tidak boleh panik?": "Karena panik membuat kita sulit berpikir dan bertindak dengan benar.",
+                        "Bagaimana cara membantu teman saat bencana?": "Ajak dia ke tempat aman dan beri semangat.",
+                        "Kalau terpisah dari orang tua, apa yang harus dilakukan?": "Pergi ke posko atau tempat berkumpul yang aman."
+                    }
+                };
+                
+                // --- NEW FEATURE: Story Prompts ---
+                const storyPrompts = {
+                    "Buat Cerita ✨": {
+                        "Cerita tentang Gempa": "gempa bumi",
+                        "Cerita tentang Banjir": "banjir",
+                        "Cerita tentang Gunung Meletus": "gunung meletus",
+                        "Cerita tentang Kebakaran": "kebakaran"
+                    }
+                };
+
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const speechSynthesis = window.speechSynthesis;
+                let recognition;
+
+                let isListening = false;
+                let canListen = false;
+
+                const disablePanels = () => {
+                    knowledgePanelEl.setAttribute('visible', 'false');
+                    knowledgePanelEl.querySelectorAll('a-entity').forEach(panel => {
+                        panel.classList.remove('clickable');
+                    });
+                };
+
+                const enablePanels = () => {
+                    knowledgePanelEl.setAttribute('visible', 'true');
+                     knowledgePanelEl.querySelectorAll('a-entity').forEach(panel => {
+                        panel.classList.add('clickable');
+                    });
+                };
+
+                const startListening = () => {
+                    if (!recognition || isListening || !canListen) return;
+                    try {
+                        recognition.start();
+                        isListening = true;
+                        console.log("Mulai mendengarkan...");
+                    } catch(e) { console.error("Error starting recognition:", e); }
+                };
+
+                const typeText = (text) => {
+                    clearInterval(typeInterval);
+                    answerTextEl.setAttribute('value', '');
+                    let i = 0;
+                    typeInterval = setInterval(() => {
+                        if (i < text.length) {
+                            answerTextEl.setAttribute('value', text.substring(0, i + 1));
+                            i++;
+                        } else {
+                            clearInterval(typeInterval);
+                        }
+                    }, 50);
+                };
+                
+                const giveAnswer = (answer, onEndCallback) => {
+                    canListen = false;
+                    if (isListening) { recognition.stop(); isListening = false; }
+                    disablePanels();
+
+                    typeText(answer); 
+                    speechBubbleEl.setAttribute('visible', 'true'); 
+
+                    robotHeadEl.setAttribute('animation', {
+                        property: 'rotation', to: '0 -10 0', dir: 'alternate', loop: true, dur: 500
+                    });
+                    
+                    const utterance = new SpeechSynthesisUtterance(answer);
+                    utterance.lang = 'id-ID';
+                    utterance.pitch = 0.5;
+                    utterance.rate = 0.8;
+                    
+                    utterance.onend = function() {
+                        robotHeadEl.removeAttribute('animation');
+                        robotHeadEl.setAttribute('rotation', '0 0 0');
+                        if (onEndCallback) {
+                            onEndCallback();
+                        }
+                    };
+                    speechSynthesis.speak(utterance);
+                };
+
+                const getGenerativeAnswer = async (question) => {
+                    giveAnswer("Hmm, sebentar ya, aku pikirkan dulu...", () => {
+                        showCategoryPanels();
+                    });
+                    
+                    const prompt = `Jelaskan untuk anak SD: ${question}`;
+                    const apiKey = "";
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                    
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                        });
+                        if (!response.ok) throw new Error(`API request failed`);
+                        const result = await response.json();
+                        const text = result.candidates[0].content.parts[0].text;
+                        
+                        giveAnswer(text, () => {
+                            canListen = true;
+                            startListening();
+                            showCategoryPanels();
+                        });
+
+                    } catch (error) {
+                        console.error("Error fetching from Gemini API:", error);
+                        giveAnswer("Aduh, otakku sedang istirahat. Coba lagi nanti ya.", () => {
+                            canListen = true;
+                            startListening();
+                            showCategoryPanels();
+                        });
+                    }
+                };
+
+                // --- NEW FEATURE: Generative Story Function ---
+                const getGenerativeStory = async (topic) => {
+                    giveAnswer(`Oke, aku akan coba buatkan cerita tentang ${topic}...`, null);
+                    
+                    const prompt = `Buatkan cerita anak-anak untuk anak SD, sekitar 3 sampai 4 paragraf pendek, tentang ${topic}. Ceritanya harus mendidik, menceritakan apa yang harus dilakukan dengan cara yang positif dan tidak menakutkan. Gunakan tokoh anak-anak seperti Budi atau Ani.`;
+                    const apiKey = "";
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                    
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                        });
+                        if (!response.ok) throw new Error(`API request failed`);
+                        const result = await response.json();
+                        const text = result.candidates[0].content.parts[0].text;
+                        
+                        giveAnswer(text, () => {
+                            canListen = true;
+                            startListening();
+                            showCategoryPanels(); // Go back to categories after story
+                        });
+
+                    } catch (error) {
+                        console.error("Error fetching story from Gemini API:", error);
+                        giveAnswer("Aduh, imajinasiku sedang macet. Coba lagi nanti ya.", () => {
+                            canListen = true;
+                            startListening();
+                            showCategoryPanels();
+                        });
+                    }
+                };
+
+                const processCommand = (command) => {
+                    const lowerCaseCommand = command.toLowerCase().trim();
+                    console.log('Perintah diterima:', command);
+
+                    if (conversationState === 'WAITING_FOR_NAME') {
+                        userName = command.split(' ').pop(); 
+                        userName = userName.charAt(0).toUpperCase() + userName.slice(1);
+                        const greetingText = `Halo, ${userName}! Senang bertemu denganmu. Pilih kategori yang ingin kamu pelajari.`;
+                        giveAnswer(greetingText, () => {
+                            conversationState = 'QNA';
+                            canListen = true;
+                            startListening();
+                            showCategoryPanels();
+                        });
+                    } else if (conversationState === 'QNA') {
+                        let foundAnswer = null;
+                        // First, check for an exact match from a panel click.
+                        for (const category in qaDatabase) {
+                            if (qaDatabase[category][command]) {
+                                foundAnswer = qaDatabase[category][command];
+                                break;
+                            }
+                        }
+
+                        // If no exact match, check for keywords from voice.
+                        if (!foundAnswer) {
+                             for (const category in qaDatabase) {
+                                for (const question in qaDatabase[category]) {
+                                    if (lowerCaseCommand.includes(question.toLowerCase())) {
+                                        foundAnswer = qaDatabase[category][question];
+                                        break;
+                                    }
+                                }
+                                if(foundAnswer) break;
+                            }
+                        }
+                        
+                        if (foundAnswer) {
+                            giveAnswer(foundAnswer, () => {
+                                canListen = true;
+                                startListening();
+                                showCategoryPanels();
+                            });
+                        } else {
+                            getGenerativeAnswer(command);
+                        }
+                    }
+                };
+
+                const clearPanels = () => {
+                    while (knowledgePanelEl.firstChild) {
+                        knowledgePanelEl.removeChild(knowledgePanelEl.firstChild);
+                    }
+                };
+
+                const showQuestionPanels = (category) => {
+                    clearPanels();
+                    const questions = qaDatabase[category];
+                    const questionKeys = Object.keys(questions);
+                    
+                    questionKeys.forEach((question, index) => {
+                        const panel = document.createElement('a-entity');
+                        panel.setAttribute('class', 'clickable');
+                        panel.setAttribute('position', `0 ${1.2 - index * 0.55} 0`);
+                        panel.innerHTML = `
+                            <a-plane color="#3498DB" width="3" height="0.5" rounded="0.1"></a-plane>
+                            <a-text value="${question}" color="#FFFFFF" width="2.8" align="center" position="0 0 0.01"></a-text>
+                        `;
+                        panel.addEventListener('click', () => processCommand(question));
+                        knowledgePanelEl.appendChild(panel);
+                    });
+
+                    const backButton = document.createElement('a-entity');
+                    backButton.setAttribute('class', 'clickable');
+                    backButton.setAttribute('position', `0 ${1.2 - questionKeys.length * 0.55} 0`);
+                    backButton.innerHTML = `
+                        <a-plane color="#E74C3C" width="3" height="0.5" rounded="0.1"></a-plane>
+                        <a-text value="Kembali" color="#FFFFFF" width="2.8" align="center" position="0 0 0.01"></a-text>
+                    `;
+                    backButton.addEventListener('click', showCategoryPanels);
+                    knowledgePanelEl.appendChild(backButton);
+
+                    enablePanels();
+                };
+
+                const showStoryPromptPanels = () => {
+                    clearPanels();
+                    const prompts = storyPrompts["Buat Cerita ✨"];
+                    const promptKeys = Object.keys(prompts);
+
+                    promptKeys.forEach((promptText, index) => {
+                        const panel = document.createElement('a-entity');
+                        panel.setAttribute('class', 'clickable');
+                        panel.setAttribute('position', `0 ${1.2 - index * 0.55} 0`);
+                        panel.innerHTML = `
+                            <a-plane color="#FFC300" width="3" height="0.5" rounded="0.1"></a-plane>
+                            <a-text value="${promptText}" color="#333" width="2.8" align="center" position="0 0 0.01"></a-text>
+                        `;
+                        panel.addEventListener('click', () => {
+                            const topic = prompts[promptText];
+                            getGenerativeStory(topic);
+                        });
+                        knowledgePanelEl.appendChild(panel);
+                    });
+
+                    const backButton = document.createElement('a-entity');
+                    backButton.setAttribute('class', 'clickable');
+                    backButton.setAttribute('position', `0 ${1.2 - promptKeys.length * 0.55} 0`);
+                    backButton.innerHTML = `
+                        <a-plane color="#E74C3C" width="3" height="0.5" rounded="0.1"></a-plane>
+                        <a-text value="Kembali" color="#FFFFFF" width="2.8" align="center" position="0 0 0.01"></a-text>
+                    `;
+                    backButton.addEventListener('click', showCategoryPanels);
+                    knowledgePanelEl.appendChild(backButton);
+
+                    enablePanels();
+                };
+                
+                const showCategoryPanels = () => {
+                    clearPanels();
+                    const categories = Object.keys(qaDatabase);
+                    categories.push("Buat Cerita ✨"); // Add the new category
+
+                    categories.forEach((category, index) => {
+                        const panel = document.createElement('a-entity');
+                        panel.setAttribute('class', 'clickable');
+                        panel.setAttribute('position', `${(index - (categories.length - 1) / 2) * 2.5} 1.5 0`);
+                        
+                        const isStory = category === "Buat Cerita ✨";
+                        const panelColor = isStory ? "#9B59B6" : "#2ECC71"; // Purple for story, green for others
+
+                        panel.innerHTML = `
+                            <a-plane color="${panelColor}" width="2.2" height="0.6" rounded="0.1"></a-plane>
+                            <a-text value="${category}" color="#FFFFFF" width="2" align="center" position="0 0 0.01"></a-text>
+                        `;
+                        panel.addEventListener('click', () => {
+                            if (isStory) {
+                                showStoryPromptPanels();
+                            } else {
+                                showQuestionPanels(category);
+                            }
+                        });
+                        knowledgePanelEl.appendChild(panel);
+                    });
+                    enablePanels();
+                };
+
+                const handleIntroduction = () => {
+                    conversationState = 'INTRODUCTION';
+                    const introText = "Halo, namaku Ros. Aku robot asisten untuk membantumu memahami bencana.";
+                    giveAnswer(introText, () => {
+                        const askNameText = "Kalau boleh tahu, nama kamu siapa?";
+                        giveAnswer(askNameText, () => {
+                            conversationState = 'WAITING_FOR_NAME';
+                            canListen = true;
+                            startListening();
+                        });
+                    });
+                };
+
+                // --- EVENT LISTENERS ---
+                startBtn.addEventListener('click', () => {
+                    if (!SpeechRecognition || !speechSynthesis) {
+                        alert("Maaf, browser ini tidak mendukung fitur suara.");
+                        return;
+                    }
+                    recognition = new SpeechRecognition();
+                    recognition.lang = 'id-ID';
+                    recognition.interimResults = false;
+                    recognition.continuous = true;
+
+                    recognition.onresult = (event) => {
+                        const last = event.results.length - 1;
+                        const command = event.results[last][0].transcript;
+                        processCommand(command);
+                    };
+                    recognition.onerror = (event) => {
+                        console.error('Speech recognition error:', event.error);
+                        isListening = false;
+                    };
+                    recognition.onend = () => {
+                        isListening = false;
+                        if (canListen) { startListening(); }
+                    };
+
+                    handleIntroduction();
+                    startBtn.style.display = 'none';
+                });
+
+                sendBtn.addEventListener('click', () => {
+                    const command = textInput.value;
+                    if (command) {
+                        if (conversationState === 'IDLE') {
+                           handleIntroduction();
+                        } else {
+                           processCommand(command);
+                        }
+                        textInput.value = '';
+                    }
+                });
+
+                textInput.addEventListener('keyup', (event) => {
+                    if (event.key === 'Enter') { sendBtn.click(); }
+                });
+
+                sceneEl.addEventListener('enter-vr', () => {
+                    keyboardContainer.style.display = 'none';
+                });
+
+                sceneEl.addEventListener('exit-vr', () => {
+                    keyboardContainer.style.display = 'block';
+                });
+                
+                disablePanels(); // Start with panels disabled
+            }
+        });
+    </script>
+</head>
+<body style="margin : 0px; overflow: hidden;">
+    
+    <!-- Non-VR UI -->
+    <div id="ui-container">
+        <button id="start-btn">Mulai Bicara dengan Ros</button>
+        <div id="keyboard-input-container">
+            <input type="text" id="text-input" placeholder="Atau ketik di sini...">
+            <button id="send-btn">Kirim</button>
+        </div>
+    </div>
+
+    <a-scene background="color: #87CEEB" voice-listener>
+        <a-camera>
+            <a-cursor id="cursor"
+                      raycaster="objects: .clickable"
+                      fuse="true"
+                      fuse-timeout="4000">
+                <a-entity
+                    geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03; thetaLength: 0"
+                    material="color: #007BFF; shader: flat; opacity: 0.8"
+                    animation__fusing="property: geometry.thetaLength; from: 0; to: 360; startEvents: fusing; dur: 4000; easing: linear"
+                    animation__reset="property: geometry.thetaLength; to: 0; startEvents: mouseleave; dur: 0">
+                </a-entity>
+            </a-cursor>
+        </a-camera>
+
+        <!-- Lighting -->
+        <a-light type="ambient" color="#AAA"></a-light>
+        <a-light type="directional" intensity="0.5" position="-1 1 2"></a-light>
+
+        <!-- Floating Knowledge Panel Container -->
+        <a-entity id="knowledge-panel" position="0 0 -2.5" visible="false"></a-entity>
+
+        <!-- ROBOT CHARACTER "ROS" -->
+        <a-entity id="robot" position="0 0.7 -3" rotation="0 0 0">
+            <!-- Robot Name -->
+            <a-text value="Ros" color="#333" position="0 2.1 0" align="center" width="5"></a-text>
+            
+            <!-- Speech Bubble -->
+            <a-entity id="speech-bubble" position="0 2.5 0" visible="false">
+                <a-plane color="#FFFFFF" width="2.5" height="1" rounded="0.2" position="0 0 -0.01"></a-plane>
+                <a-triangle color="#FFFFFF" vertex-a="0 -0.5 0" vertex-b="-0.2 -0.7 0" vertex-c="0.2 -0.7 0"></a-triangle>
+                <a-text id="answer-text" value="" color="#00008B" width="2.3" align="center" wrap-count="35"></a-text>
+            </a-entity>
+
+            <!-- Head Group (for animation) -->
+            <a-entity id="robot-head" position="0 1.2 0">
+                <!-- Head -->
+                <a-box position="0 0 0" width="0.9" height="0.8" depth="0.8" color="#FFFFFF" shadow>
+                    <!-- Screen -->
+                    <a-box position="0 0 0.41" width="0.7" height="0.6" depth="0.05" color="#87CEEB"></a-box>
+                    <!-- Eyes -->
+                    <a-box position="-0.15 0.1 0.44" width="0.1" height="0.15" depth="0.05" color="#2C3E50"></a-box>
+                    <a-box position="0.15 0.1 0.44" width="0.1" height="0.15" depth="0.05" color="#2C3E50"></a-box>
+                    <!-- Smile -->
+                    <a-entity position="0 -0.1 0.44" geometry="primitive: torus; radius: 0.12; radiusTubular: 0.02; arc: 180" material="color: #2C3E50" rotation="0 0 180"></a-entity>
+                </a-box>
+                <!-- Graduation Cap -->
+                <a-entity id="grad-cap" position="0 0.4 0">
+                    <a-box position="0 0.1 0" width="1.2" height="0.1" depth="1.2" color="#34495E"></a-box>
+                    <a-cylinder position="0 0 0" radius="0.3" height="0.2" color="#34495E"></a-cylinder>
+                    <!-- Tassel -->
+                    <a-cylinder position="0.3 0.1 0" radius="0.01" height="0.3" color="#FFC107"></a-cylinder>
+                </a-entity>
+            </a-entity>
+            
+            <!-- Body -->
+            <a-box id="robot-body" position="0 0.5 0" width="0.6" height="0.8" depth="0.6" color="#BDC3C7" shadow></a-box>
+            
+            <!-- Arms -->
+            <a-cylinder position="-0.4 0.6 0" radius="0.1" height="0.4" color="#FFFFFF" rotation="0 0 30" shadow></a-cylinder>
+            <a-cylinder position="0.4 0.6 0" radius="0.1" height="0.4" color="#FFFFFF" rotation="0 0 -30" shadow></a-cylinder>
+
+            <!-- Legs -->
+            <a-cylinder position="-0.15 0 0" radius="0.15" height="0.2" color="#FFFFFF" shadow></a-cylinder>
+            <a-cylinder position="0.15 0 0" radius="0.15" height="0.2" color="#FFFFFF" shadow></a-cylinder>
+        </a-entity>
+        
+        <!-- Ground -->
+        <a-plane position="0 0 -5" rotation="-90 0 0" width="20" height="20" color="#90EE90" shadow></a-plane>
+    </a-scene>
+</body>
+</html>
