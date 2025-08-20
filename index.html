@@ -77,31 +77,10 @@
 
                 // --- Q&A DATABASE (Categorized) ---
                 const qaDatabase = {
-                    "Dasar Bencana": {
-                        "Apa itu bencana alam?": "Bencana alam adalah kejadian besar dari alam yang bisa merusak lingkungan dan membahayakan orang.",
-                        "Apa itu mitigasi bencana?": "Mitigasi bencana adalah usaha untuk mengurangi risiko bahaya sebelum bencana terjadi.",
-                        "Kenapa kita harus belajar tentang bencana?": "Supaya kita tahu cara melindungi diri dan membantu orang lain.",
-                        "Apa itu evakuasi?": "Evakuasi adalah pindah ke tempat aman saat ada bahaya.",
-                        "Apa itu jalur evakuasi?": "Jalan atau rute yang harus dilalui untuk menuju tempat aman."
-                    },
-                    "Gempa & Gunung": {
-                        "Apa itu gempa bumi?": "Getaran di permukaan bumi karena pergerakan lempeng bumi.",
-                        "Apa yang harus dilakukan saat gempa bumi?": "Segera lindungi kepala, bersembunyi di bawah meja, dan jangan panik.",
-                        "Bagaimana cara aman keluar saat gempa di sekolah?": "Ikuti guru, jangan berlari, dan jaga jarak dari bangunan.",
-                        "Bagaimana tanda-tanda gunung akan meletus?": "Ada getaran, suara gemuruh, dan asap keluar dari puncak gunung."
-                    },
-                    "Banjir & Kebakaran": {
-                        "Kalau ada banjir, apa yang harus kita lakukan?": "Pindah ke tempat yang lebih tinggi dan aman, jangan main di air banjir.",
-                        "Apa yang tidak boleh dilakukan saat banjir?": "Jangan bermain di air banjir, jangan mendekati tiang listrik.",
-                        "Kalau ada kebakaran, apa yang harus dilakukan?": "Segera keluar dari bangunan, tutup hidung dan mulut dengan kain basah."
-                    },
-                    "Tindakan Penting": {
-                        "Apa itu tas siaga bencana?": "Tas berisi barang penting yang siap dibawa saat bencana.",
-                        "Apa yang harus dibawa saat mengungsi?": "Bawa barang penting seperti air minum, makanan, obat, dan pakaian secukupnya.",
-                        "Mengapa kita tidak boleh panik?": "Karena panik membuat kita sulit berpikir dan bertindak dengan benar.",
-                        "Bagaimana cara membantu teman saat bencana?": "Ajak dia ke tempat aman dan beri semangat.",
-                        "Kalau terpisah dari orang tua, apa yang harus dilakukan?": "Pergi ke posko atau tempat berkumpul yang aman."
-                    }
+                    "Dasar Bencana": { "Apa itu bencana alam?": "Bencana alam adalah kejadian besar dari alam yang bisa merusak lingkungan dan membahayakan orang.", "Apa itu mitigasi bencana?": "Mitigasi bencana adalah usaha untuk mengurangi risiko bahaya sebelum bencana terjadi.", "Kenapa kita harus belajar tentang bencana?": "Supaya kita tahu cara melindungi diri dan membantu orang lain.", "Apa itu evakuasi?": "Evakuasi adalah pindah ke tempat aman saat ada bahaya.", "Apa itu jalur evakuasi?": "Jalan atau rute yang harus dilalui untuk menuju tempat aman." },
+                    "Gempa & Gunung": { "Apa itu gempa bumi?": "Getaran di permukaan bumi karena pergerakan lempeng bumi.", "Apa yang harus dilakukan saat gempa bumi?": "Segera lindungi kepala, bersembunyi di bawah meja, dan jangan panik.", "Bagaimana cara aman keluar saat gempa di sekolah?": "Ikuti guru, jangan berlari, dan jaga jarak dari bangunan.", "Bagaimana tanda-tanda gunung akan meletus?": "Ada getaran, suara gemuruh, dan asap keluar dari puncak gunung." },
+                    "Banjir & Kebakaran": { "Kalau ada banjir, apa yang harus kita lakukan?": "Pindah ke tempat yang lebih tinggi dan aman, jangan main di air banjir.", "Apa yang tidak boleh dilakukan saat banjir?": "Jangan bermain di air banjir, jangan mendekati tiang listrik.", "Kalau ada kebakaran, apa yang harus dilakukan?": "Segera keluar dari bangunan, tutup hidung dan mulut dengan kain basah." },
+                    "Tindakan Penting": { "Apa itu tas siaga bencana?": "Tas berisi barang penting yang siap dibawa saat bencana.", "Apa yang harus dibawa saat mengungsi?": "Bawa barang penting seperti air minum, makanan, obat, dan pakaian secukupnya.", "Mengapa kita tidak boleh panik?": "Karena panik membuat kita sulit berpikir dan bertindak dengan benar.", "Bagaimana cara membantu teman saat bencana?": "Ajak dia ke tempat aman dan beri semangat.", "Kalau terpisah dari orang tua, apa yang harus dilakukan?": "Pergi ke posko atau tempat berkumpul yang aman." }
                 };
 
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -111,26 +90,13 @@
                 let isListening = false;
                 let canListen = false;
 
-                const disablePanels = () => {
-                    knowledgePanelEl.setAttribute('visible', 'false');
-                    knowledgePanelEl.querySelectorAll('a-entity').forEach(panel => {
-                        panel.classList.remove('clickable');
-                    });
-                };
-
-                const enablePanels = () => {
-                    knowledgePanelEl.setAttribute('visible', 'true');
-                        knowledgePanelEl.querySelectorAll('a-entity').forEach(panel => {
-                        panel.classList.add('clickable');
-                    });
-                };
+                const disablePanels = () => { knowledgePanelEl.setAttribute('visible', 'false'); knowledgePanelEl.querySelectorAll('a-entity').forEach(panel => { panel.classList.remove('clickable'); }); };
+                const enablePanels = () => { knowledgePanelEl.setAttribute('visible', 'true'); knowledgePanelEl.querySelectorAll('a-entity').forEach(panel => { panel.classList.add('clickable'); }); };
 
                 const startListening = () => {
                     if (!recognition || isListening || !canListen) return;
                     try {
                         recognition.start();
-                        isListening = true;
-                        console.log("Mulai mendengarkan...");
                     } catch(e) { console.error("Error starting recognition:", e); }
                 };
 
@@ -150,21 +116,15 @@
                 
                 const giveAnswer = (answer, onEndCallback) => {
                     canListen = false;
-                    if (isListening) { recognition.stop(); isListening = false; }
+                    if (isListening) { recognition.stop(); }
                     disablePanels();
-
                     typeText(answer); 
                     speechBubbleEl.setAttribute('visible', 'true'); 
-
-                    robotHeadEl.setAttribute('animation', {
-                        property: 'rotation', to: '0 -10 0', dir: 'alternate', loop: true, dur: 500
-                    });
-                    
+                    robotHeadEl.setAttribute('animation', { property: 'rotation', to: '0 -10 0', dir: 'alternate', loop: true, dur: 500 });
                     const utterance = new SpeechSynthesisUtterance(answer);
                     utterance.lang = 'id-ID';
                     utterance.pitch = 0.5;
                     utterance.rate = 0.8;
-                    
                     utterance.onend = function() {
                         robotHeadEl.removeAttribute('animation');
                         robotHeadEl.setAttribute('rotation', '0 0 0');
@@ -177,156 +137,68 @@
 
                 const getGenerativeAnswer = async (question) => {
                     giveAnswer("Hmm, sebentar ya, aku pikirkan dulu...", () => {});
-                    
                     const apiUrl = '/api/generate';
-                    
                     try {
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ question: question })
-                        });
-
-                        if (!response.ok) {
-                           const errorResult = await response.json();
-                           console.error("API Error Response:", errorResult);
-                           throw new Error(`API request failed with status ${response.status}`);
-                        }
-
+                        const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: question }) });
+                        if (!response.ok) { const errorResult = await response.json(); console.error("API Error Response:", errorResult); throw new Error(`API request failed with status ${response.status}`); }
                         const result = await response.json();
                         const text = result.answer;
-                        
-                        giveAnswer(text, () => {
-                            canListen = true;
-                            startListening();
-                            showCategoryPanels();
-                        });
-
+                        giveAnswer(text, () => { canListen = true; startListening(); showCategoryPanels(); });
                     } catch (error) {
                         console.error("Error fetching from backend:", error);
-                        giveAnswer("Aduh, otakku sedang istirahat. Coba lagi nanti ya.", () => {
-                            canListen = true;
-                            startListening();
-                            showCategoryPanels();
-                        });
+                        giveAnswer("Aduh, otakku sedang istirahat. Coba lagi nanti ya.", () => { canListen = true; startListening(); showCategoryPanels(); });
                     }
                 };
                 
-                // ======================================================================
-                // === FUNGSI INI TELAH DIPERBARUI DENGAN LOGIKA DETEKSI KATEGORI ===
-                // ======================================================================
                 const processCommand = (command, isFromPanel = false) => {
                     command = command.toLowerCase().trim();
                     console.log('Perintah diterima:', command);
-
                     if (conversationState === 'WAITING_FOR_NAME') {
                         userName = command.split(' ').pop(); 
                         userName = userName.charAt(0).toUpperCase() + userName.slice(1);
                         const greetingText = `Halo, ${userName}! Senang bertemu denganmu. Pilih kategori yang ingin kamu pelajari.`;
-                        giveAnswer(greetingText, () => {
-                            conversationState = 'QNA';
-                            canListen = true;
-                            startListening();
-                            showCategoryPanels();
-                        });
+                        giveAnswer(greetingText, () => { conversationState = 'QNA'; canListen = true; startListening(); showCategoryPanels(); });
                     } else if (conversationState === 'QNA') {
                         let foundAnswer = null;
-                        
                         if (isFromPanel) {
-                            // Logika ini tetap sama, untuk klik panel pertanyaan
-                            for (const category in qaDatabase) {
-                                if (qaDatabase[category][command]) {
-                                    foundAnswer = qaDatabase[category][command];
-                                    break;
-                                }
-                            }
+                            for (const category in qaDatabase) { if (qaDatabase[category][command]) { foundAnswer = qaDatabase[category][command]; break; } }
                         } else {
-                            // --- LOGIKA BARU DIMULAI DI SINI (untuk input suara) ---
-
-                            // BARU: Langkah 1 - Cek apakah pengguna menyebutkan nama kategori
                             let foundCategory = null;
                             for (const categoryName in qaDatabase) {
-                                // Buat keyword dari nama kategori (misal: "banjir", "kebakaran" dari "Banjir & Kebakaran")
                                 const keywords = categoryName.toLowerCase().replace('&', '').split(' ');
-                                // Cek apakah command dari user mengandung salah satu keyword kategori
                                 const isMatch = keywords.some(keyword => keyword.length > 2 && command.includes(keyword));
-
-                                if (isMatch) {
-                                    foundCategory = categoryName;
-                                    break; // Kategori ditemukan, hentikan pencarian
-                                }
+                                if (isMatch) { foundCategory = categoryName; break; }
                             }
-
-                            // BARU: Jika kategori ditemukan, tampilkan panel pertanyaannya dan hentikan proses.
-                            if (foundCategory) {
-                                console.log(`Kategori terdeteksi: ${foundCategory}`);
-                                showQuestionPanels(foundCategory);
-                                return; // Keluar dari fungsi agar tidak lanjut ke Gemini API
-                            }
-
-                            // LAMA: Langkah 2 - Jika bukan kategori, baru cek apakah itu pertanyaan spesifik
-                            for (const category in qaDatabase) {
-                                for (const question in qaDatabase[category]) {
-                                    if (command.includes(question.toLowerCase())) {
-                                        foundAnswer = qaDatabase[category][question];
-                                        break;
-                                    }
-                                }
-                                if(foundAnswer) break;
-                            }
-                            // --- AKHIR DARI LOGIKA BARU ---
+                            if (foundCategory) { console.log(`Kategori terdeteksi: ${foundCategory}`); showQuestionPanels(foundCategory); return; }
+                            for (const category in qaDatabase) { for (const question in qaDatabase[category]) { if (command.includes(question.toLowerCase())) { foundAnswer = qaDatabase[category][question]; break; } } if(foundAnswer) break; }
                         }
-                        
                         if (foundAnswer) {
-                            giveAnswer(foundAnswer, () => {
-                                canListen = true;
-                                startListening();
-                                showCategoryPanels();
-                            });
+                            giveAnswer(foundAnswer, () => { canListen = true; startListening(); showCategoryPanels(); });
                         } else {
-                            // Langkah 3 - Jika sama sekali tidak ditemukan, baru lempar ke AI
-                            // Pastikan ini tidak dijalankan jika datang dari klik panel
-                            if (!isFromPanel) {
-                                getGenerativeAnswer(command);
-                            }
+                            if (!isFromPanel) { getGenerativeAnswer(command); }
                         }
                     }
                 };
 
-                const clearPanels = () => {
-                    while (knowledgePanelEl.firstChild) {
-                        knowledgePanelEl.removeChild(knowledgePanelEl.firstChild);
-                    }
-                };
-
+                const clearPanels = () => { while (knowledgePanelEl.firstChild) { knowledgePanelEl.removeChild(knowledgePanelEl.firstChild); } };
                 const showQuestionPanels = (category) => {
                     clearPanels();
                     const questions = qaDatabase[category];
                     const questionKeys = Object.keys(questions);
-                    
                     questionKeys.forEach((question, index) => {
                         const panel = document.createElement('a-entity');
                         panel.setAttribute('class', 'clickable');
                         panel.setAttribute('position', `0 ${1.2 - index * 0.55} 0`);
-                        panel.innerHTML = `
-                            <a-plane color="#3498DB" width="3" height="0.5" rounded="0.1"></a-plane>
-                            <a-text value="${question}" color="#FFFFFF" width="2.8" align="center" position="0 0 0.01"></a-text>
-                        `;
+                        panel.innerHTML = `<a-plane color="#3498DB" width="3" height="0.5" rounded="0.1"></a-plane><a-text value="${question}" color="#FFFFFF" width="2.8" align="center" position="0 0 0.01"></a-text>`;
                         panel.addEventListener('click', () => processCommand(question, true));
                         knowledgePanelEl.appendChild(panel);
                     });
-
-                    // Add a back button
                     const backButton = document.createElement('a-entity');
                     backButton.setAttribute('class', 'clickable');
                     backButton.setAttribute('position', `0 ${1.2 - questionKeys.length * 0.55} 0`);
-                    backButton.innerHTML = `
-                        <a-plane color="#E74C3C" width="3" height="0.5" rounded="0.1"></a-plane>
-                        <a-text value="Kembali" color="#FFFFFF" width="2.8" align="center" position="0 0 0.01"></a-text>
-                    `;
+                    backButton.innerHTML = `<a-plane color="#E74C3C" width="3" height="0.5" rounded="0.1"></a-plane><a-text value="Kembali" color="#FFFFFF" width="2.8" align="center" position="0 0 0.01"></a-text>`;
                     backButton.addEventListener('click', showCategoryPanels);
                     knowledgePanelEl.appendChild(backButton);
-
                     enablePanels();
                 };
                 
@@ -337,10 +209,7 @@
                         const panel = document.createElement('a-entity');
                         panel.setAttribute('class', 'clickable');
                         panel.setAttribute('position', `${(index - 1.5) * 2.5} 1.5 0`);
-                        panel.innerHTML = `
-                            <a-plane color="#2ECC71" width="2.2" height="0.6" rounded="0.1"></a-plane>
-                            <a-text value="${category}" color="#FFFFFF" width="2" align="center" position="0 0 0.01"></a-text>
-                        `;
+                        panel.innerHTML = `<a-plane color="#2ECC71" width="2.2" height="0.6" rounded="0.1"></a-plane><a-text value="${category}" color="#FFFFFF" width="2" align="center" position="0 0 0.01"></a-text>`;
                         panel.addEventListener('click', () => showQuestionPanels(category));
                         knowledgePanelEl.appendChild(panel);
                     });
@@ -352,15 +221,13 @@
                     const introText = "Halo, namaku Ros. Aku robot asisten untuk membantumu memahami bencana.";
                     giveAnswer(introText, () => {
                         const askNameText = "Kalau boleh tahu, nama kamu siapa?";
-                        giveAnswer(askNameText, () => {
-                            conversationState = 'WAITING_FOR_NAME';
-                            canListen = true;
-                            startListening();
-                        });
+                        giveAnswer(askNameText, () => { conversationState = 'WAITING_FOR_NAME'; canListen = true; startListening(); });
                     });
                 };
 
-                // --- EVENT LISTENERS ---
+                // ======================================================================
+                // === BAGIAN INI DIMODIFIKASI TOTAL UNTUK STABILITAS MIKROFON ===
+                // ======================================================================
                 startBtn.addEventListener('click', () => {
                     if (!SpeechRecognition || !speechSynthesis) {
                         alert("Maaf, browser ini tidak mendukung fitur suara.");
@@ -374,15 +241,31 @@
                     recognition.onresult = (event) => {
                         const last = event.results.length - 1;
                         const command = event.results[last][0].transcript;
+                        canListen = false;
+                        recognition.stop();
                         processCommand(command);
                     };
+
                     recognition.onerror = (event) => {
-                        console.error('Speech recognition error:', event.error);
                         isListening = false;
+                        if (event.error !== 'no-speech' && event.error !== 'audio-capture') {
+                           console.error('Speech recognition error:', event.error);
+                        }
                     };
+
                     recognition.onend = () => {
                         isListening = false;
-                        if (canListen) { startListening(); }
+                        if (canListen) {
+                            console.log("Recognition service ended, restarting...");
+                            setTimeout(() => startListening(), 100); 
+                        } else {
+                            console.log("Recognition service ended intentionally.");
+                        }
+                    };
+                    
+                    recognition.onstart = () => {
+                        isListening = true;
+                        console.log("Speech recognition active.");
                     };
 
                     handleIntroduction();
@@ -392,29 +275,31 @@
                 sendBtn.addEventListener('click', () => {
                     const command = textInput.value;
                     if (command) {
-                        if (conversationState === 'IDLE') {
-                           handleIntroduction();
-                        } else {
-                           processCommand(command);
-                        }
+                        if (conversationState === 'IDLE') { handleIntroduction(); } else { processCommand(command); }
                         textInput.value = '';
                         startBtn.style.display = 'none';
                     }
                 });
 
-                textInput.addEventListener('keyup', (event) => {
-                    if (event.key === 'Enter') { sendBtn.click(); }
-                });
-
-                sceneEl.addEventListener('enter-vr', () => {
-                    keyboardContainer.style.display = 'none';
-                });
-
-                sceneEl.addEventListener('exit-vr', () => {
-                    keyboardContainer.style.display = 'block';
-                });
+                textInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') { sendBtn.click(); } });
+                sceneEl.addEventListener('enter-vr', () => { keyboardContainer.style.display = 'none'; });
+                sceneEl.addEventListener('exit-vr', () => { keyboardContainer.style.display = 'block'; });
                 
-                disablePanels(); // Start with panels disabled
+                // BARU: Event listener untuk tombol restart mic manual
+                const micRestartBtn = document.querySelector('#mic-restart-btn');
+                if (micRestartBtn) {
+                    micRestartBtn.addEventListener('click', () => {
+                        console.log("Manual mic restart requested.");
+                        micRestartBtn.setAttribute('material', 'color', '#2ECC71');
+                        canListen = true;
+                        startListening();
+                        setTimeout(() => {
+                            micRestartBtn.setAttribute('material', 'color', '#E74C3C');
+                        }, 1500);
+                    });
+                }
+                
+                disablePanels();
             }
         });
     </script>
@@ -431,10 +316,7 @@
 
     <a-scene background="color: #87CEEB" voice-listener>
         <a-camera>
-            <a-cursor id="cursor"
-                      raycaster="objects: .clickable"
-                      fuse="true"
-                      fuse-timeout="1500">
+            <a-cursor id="cursor" raycaster="objects: .clickable" fuse="true" fuse-timeout="1500">
                 <a-entity
                     geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03; thetaLength: 0"
                     material="color: #007BFF; shader: flat; opacity: 0.8"
@@ -449,15 +331,23 @@
 
         <a-entity id="knowledge-panel" position="0 0.2 -3.5" visible="false"></a-entity>
 
+        <a-entity id="mic-restart-btn"
+                  geometry="primitive: sphere; radius: 0.15"
+                  material="color: #E74C3C; opacity: 0.8"
+                  position="-1.5 1 -2.5"
+                  class="clickable"
+                  animation__scale="property: scale; to: 1.2 1.2 1.2; dir: alternate; loop: true; dur: 1000; startEvents: mouseenter"
+                  animation__scale_reverse="property: scale; to: 1 1 1; dur: 500; startEvents: mouseleave">
+            <a-text value="Aktifkan Mic" align="center" position="0 0.3 0" width="2"></a-text>
+        </a-entity>
+
         <a-entity id="robot" position="0 0.7 -3" rotation="0 0 0">
             <a-text value="Ros" color="#333" position="0 2.1 0" align="center" width="5"></a-text>
-            
             <a-entity id="speech-bubble" position="0 2.5 0" visible="false">
                 <a-plane color="#FFFFFF" width="2.5" height="1" rounded="0.2" position="0 0 -0.01"></a-plane>
                 <a-triangle color="#FFFFFF" vertex-a="0 -0.5 0" vertex-b="-0.2 -0.7 0" vertex-c="0.2 -0.7 0"></a-triangle>
                 <a-text id="answer-text" value="" color="#00008B" width="2.3" align="center" wrap-count="35"></a-text>
             </a-entity>
-
             <a-entity id="robot-head" position="0 1.2 0">
                 <a-box position="0 0 0" width="0.9" height="0.8" depth="0.8" color="#FFFFFF" shadow>
                     <a-box position="0 0 0.41" width="0.7" height="0.6" depth="0.05" color="#87CEEB"></a-box>
@@ -471,12 +361,9 @@
                     <a-cylinder position="0.3 0.1 0" radius="0.01" height="0.3" color="#FFC107"></a-cylinder>
                 </a-entity>
             </a-entity>
-            
             <a-box id="robot-body" position="0 0.5 0" width="0.6" height="0.8" depth="0.6" color="#BDC3C7" shadow></a-box>
-            
             <a-cylinder position="-0.4 0.6 0" radius="0.1" height="0.4" color="#FFFFFF" rotation="0 0 30" shadow></a-cylinder>
             <a-cylinder position="0.4 0.6 0" radius="0.1" height="0.4" color="#FFFFFF" rotation="0 0 -30" shadow></a-cylinder>
-
             <a-cylinder position="-0.15 0 0" radius="0.15" height="0.2" color="#FFFFFF" shadow></a-cylinder>
             <a-cylinder position="0.15 0 0" radius="0.15" height="0.2" color="#FFFFFF" shadow></a-cylinder>
         </a-entity>
