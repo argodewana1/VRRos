@@ -120,14 +120,13 @@
                     typeInterval = setInterval(() => { if (i < text.length) { answerTextEl.setAttribute('value', text.substring(0, i + 1)); i++; } else { clearInterval(typeInterval); } }, 40);
                 };
                 
-                // --- PERBAIKAN: Fungsi untuk menyesuaikan ukuran gelembung teks ---
                 const updateSpeechBubble = (text) => {
-                    const textWidth = 2.3; // Lebar a-text
-                    const wrapCount = 35; // wrap-count a-text
-                    const baseHeight = 0.6; // Tinggi minimum gelembung
-                    const heightPerLine = 0.2; // Perkiraan tinggi per baris teks
+                    const textWidth = 2.3;
+                    const wrapCount = 35;
+                    const baseHeight = 0.6;
+                    const heightPerLine = 0.2;
                     
-                    const lines = Math.ceil(text.length / wrapCount * (textWidth / 1.5)); // Heuristik untuk menghitung jumlah baris
+                    const lines = Math.ceil(text.length / wrapCount * (textWidth / 1.5));
                     const newHeight = baseHeight + (lines * heightPerLine);
 
                     speechBubbleBgEl.setAttribute('height', newHeight);
@@ -152,7 +151,6 @@
 
                 const getGenerativeAnswer = async (question) => {
                     giveAnswer("Hmm, sebentar ya, aku pikirkan dulu...", () => showCategoryPanels());
-                    // --- PERBAIKAN: Prompt diubah untuk jawaban singkat ---
                     const prompt = `Jawab pertanyaan ini dengan singkat dan sederhana untuk anak SD (maksimal 2 kalimat): ${question}`;
                     try {
                         const response = await fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
@@ -232,7 +230,7 @@
                     categories.forEach((cat, i) => {
                         const isStory = cat === "Buat Cerita ✨";
                         createPanel({
-                            position: `${(i - (categories.length - 1) / 2) * 2.5} 1.5 0`,
+                            position: `${(i - (categories.length - 1)) / 2 * 2.5} 1.5 0`,
                             color: isStory ? "#9B59B6" : "#2ECC71",
                             text: cat, width: 2.2, height: 0.6,
                             onClick: () => isStory ? showStoryPromptPanels() : showQuestionPanels(cat)
@@ -241,7 +239,6 @@
                     enablePanels();
                 };
 
-                // --- PERBAIKAN: Logika Tombol Mikrofon ---
                 micButton.addEventListener('click', () => {
                     if (!SpeechRecognition) {
                         alert("Maaf, browser ini tidak mendukung fitur suara.");
@@ -252,27 +249,17 @@
                         recognition = new SpeechRecognition();
                         recognition.lang = 'id-ID';
                         recognition.interimResults = false;
-                        recognition.continuous = false; // Penting: berhenti setelah 1 kalimat
+                        recognition.continuous = false;
                         
-                        recognition.onstart = () => {
-                            micButton.classList.add('listening');
-                        };
-                        
-                        recognition.onend = () => {
-                            micButton.classList.remove('listening');
-                        };
-                        
+                        recognition.onstart = () => micButton.classList.add('listening');
+                        recognition.onend = () => micButton.classList.remove('listening');
                         recognition.onresult = (event) => {
                             const command = event.results[event.results.length - 1][0].transcript;
                             processCommand(command);
                         };
-                        
-                        recognition.onerror = (event) => {
-                            console.error('Speech recognition error:', event.error);
-                        };
+                        recognition.onerror = (event) => console.error('Speech recognition error:', event.error);
                     }
                     
-                    // Sembunyikan instruksi awal setelah klik pertama
                     if (initialInstruction) {
                         initialInstruction.style.display = 'none';
                     }
@@ -287,9 +274,9 @@
 </head>
 <body>
     
-    <!-- UI Overlay untuk Tombol Mikrofon dan Instruksi Awal -->
     <div id="ui-overlay">
-        <div id="initial-instruction">Ketuk ikon mikrofon untuk bicara dengan Ros</div>
+        <!-- PERBAIKAN: Instruksi diperjelas -->
+        <div id="initial-instruction">Ketuk ikon mic di bawah untuk bicara (juga saat mode VR)</div>
         <div id="mic-button" title="Ketuk untuk Bicara">
             <svg id="mic-icon" viewBox="0 0 24 24">
                 <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z"/>
@@ -307,6 +294,14 @@
                     animation__reset="property: geometry.thetaLength; to: 0; startEvents: mouseleave; dur: 0">
                 </a-entity>
             </a-cursor>
+
+            <!-- PERBAIKAN: Indikator/Petunjuk Mikrofon di dalam VR -->
+            <a-entity id="vr-mic-indicator" position="0 -0.8 -1.5" visible="true">
+                <a-plane width="0.3" height="0.3" color="#000000" opacity="0.5" rounded="0.15"></a-plane>
+                <!-- Ikon mic dari SVG path, dibuat menjadi 3D sederhana -->
+                <a-entity geometry="primitive: plane; width: 0.2; height: 0.2" material="src: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0xMiAxNGMxLjY2IDAgMy0xLjM0IDMtM1Y1YzAtMS42Ni0xLjM0LTMtMy0zUzkgMy4zNCA5IDV2NmMwIDEuNjYgMS4zNCAzIDMgM3ptNS4zLTNjMCAzLTIuNTQgNS4xLTUuMyA1LjFTNi43IDE0IDYuNyAxMUg1YzAgMy40MSAyLjcyIDYuMjMgNiA2LjcyVjIxaDJ2LTMuMjhjMy4yOC0uNDkgNi0zLjMxIDYtNi43MmgtMS43eiIvPjwvc3ZnPg==); transparent: true;" position="0 0 0.01"></a-entity>
+            </a-entity>
+
         </a-camera>
 
         <a-light type="ambient" color="#AAA"></a-light>
@@ -317,7 +312,6 @@
         <a-entity id="robot" position="0 0.7 -3">
             <a-text value="Ros" color="#333" position="0 2.1 0" align="center" width="5"></a-text>
             <a-entity id="speech-bubble" position="0 2.5 0" visible="false">
-                <!-- PERBAIKAN: Latar belakang dipisah agar bisa diubah ukurannya -->
                 <a-plane id="speech-bubble-bg" color="#FFFFFF" width="2.5" height="1" rounded="0.2" position="0 0 -0.01"></a-plane>
                 <a-triangle color="#FFFFFF" vertex-a="0 -0.5 0" vertex-b="-0.2 -0.7 0" vertex-c="0.2 -0.7 0"></a-triangle>
                 <a-text id="answer-text" value="" color="#00008B" width="2.3" align="left" wrap-count="35"></a-text>
