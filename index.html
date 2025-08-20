@@ -157,7 +157,17 @@
                         userName = command.split(' ').pop(); 
                         userName = userName.charAt(0).toUpperCase() + userName.slice(1);
                         const greetingText = `Halo, ${userName}! Senang bertemu denganmu. Pilih kategori yang ingin kamu pelajari.`;
-                        giveAnswer(greetingText, () => { conversationState = 'QNA'; canListen = true; startListening(); showCategoryPanels(); });
+                        
+                        // --- PERBAIKAN BUG "MACET" ---
+                        // Tampilkan panel SEGERA, dan aktifkan mic setelah Ros selesai bicara.
+                        showCategoryPanels();
+                        conversationState = 'QNA';
+                        giveAnswer(greetingText, () => { 
+                            canListen = true; 
+                            startListening(); 
+                        });
+                        // --------------------------------
+
                     } else if (conversationState === 'QNA') {
                         let foundAnswer = null;
                         if (isFromPanel) {
@@ -225,9 +235,6 @@
                     });
                 };
 
-                // ======================================================================
-                // === BAGIAN INI DIMODIFIKASI TOTAL UNTUK STABILITAS MIKROFON ===
-                // ======================================================================
                 startBtn.addEventListener('click', () => {
                     if (!SpeechRecognition || !speechSynthesis) {
                         alert("Maaf, browser ini tidak mendukung fitur suara.");
@@ -248,8 +255,15 @@
 
                     recognition.onerror = (event) => {
                         isListening = false;
-                        if (event.error !== 'no-speech' && event.error !== 'audio-capture') {
-                           console.error('Speech recognition error:', event.error);
+                        if (event.error === 'not-allowed') {
+                            console.error("FATAL: Microphone permission was denied.");
+                            canListen = false;
+                            giveAnswer("Ros tidak bisa mendengar. Coba cek izin mikrofon di browser kamu ya.", () => {});
+                        }
+                        else if (event.error === 'no-speech') {
+                            console.log("No speech detected, recognition stopped.");
+                        } else {
+                            console.error('Speech recognition error:', event.error);
                         }
                     };
 
@@ -285,7 +299,6 @@
                 sceneEl.addEventListener('enter-vr', () => { keyboardContainer.style.display = 'none'; });
                 sceneEl.addEventListener('exit-vr', () => { keyboardContainer.style.display = 'block'; });
                 
-                // BARU: Event listener untuk tombol restart mic manual
                 const micRestartBtn = document.querySelector('#mic-restart-btn');
                 if (micRestartBtn) {
                     micRestartBtn.addEventListener('click', () => {
@@ -329,7 +342,8 @@
         <a-light type="ambient" color="#AAA"></a-light>
         <a-light type="directional" intensity="0.5" position="-1 1 2"></a-light>
 
-        <a-entity id="knowledge-panel" position="0 0.2 -3.5" visible="false"></a-entity>
+        <!-- PERBAIKAN POSISI PANEL: Mengubah Z dari -3.5 menjadi -2.5 agar di depan robot -->
+        <a-entity id="knowledge-panel" position="0 0.2 -2.5" visible="false"></a-entity>
 
         <a-entity id="mic-restart-btn"
                   geometry="primitive: sphere; radius: 0.15"
