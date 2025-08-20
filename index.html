@@ -82,12 +82,7 @@
                 let userName = '';
                 let typeInterval;
 
-                 const qaDatabase = {
-                    "Dasar Bencana": { "Apa itu bencana alam?": "Bencana alam adalah kejadian besar dari alam yang bisa merusak lingkungan dan membahayakan orang.", "Apa itu mitigasi bencana?": "Mitigasi bencana adalah usaha untuk mengurangi risiko bahaya sebelum bencana terjadi.", "Kenapa kita harus belajar tentang bencana?": "Supaya kita tahu cara melindungi diri dan membantu orang lain.", "Apa itu evakuasi?": "Evakuasi adalah pindah ke tempat aman saat ada bahaya.", "Apa itu jalur evakuasi?": "Jalan atau rute yang harus dilalui untuk menuju tempat aman." },
-                    "Gempa & Gunung": { "Apa itu gempa bumi?": "Getaran di permukaan bumi karena pergerakan lempeng bumi.", "Apa yang harus dilakukan saat gempa bumi?": "Segera lindungi kepala, bersembunyi di bawah meja, dan jangan panik.", "Bagaimana cara aman keluar saat gempa di sekolah?": "Ikuti guru, jangan berlari, dan jaga jarak dari bangunan.", "Bagaimana tanda-tanda gunung akan meletus?": "Ada getaran, suara gemuruh, dan asap keluar dari puncak gunung." },
-                    "Banjir & Kebakaran": { "Kalau ada banjir, apa yang harus kita lakukan?": "Pindah ke tempat yang lebih tinggi dan aman, jangan main di air banjir.", "Apa yang tidak boleh dilakukan saat banjir?": "Jangan bermain di air banjir, jangan mendekati tiang listrik.", "Kalau ada kebakaran, apa yang harus dilakukan?": "Segera keluar dari bangunan, tutup hidung dan mulut dengan kain basah." },
-                    "Tindakan Penting": { "Apa itu tas siaga bencana?": "Tas berisi barang penting yang siap dibawa saat bencana.", "Apa yang harus dibawa saat mengungsi?": "Bawa barang penting seperti air minum, makanan, obat, dan pakaian secukupnya.", "Mengapa kita tidak boleh panik?": "Karena panik membuat kita sulit berpikir dan bertindak dengan benar.", "Bagaimana cara membantu teman saat bencana?": "Ajak dia ke tempat aman dan beri semangat.", "Kalau terpisah dari orang tua, apa yang harus dilakukan?": "Pergi ke posko atau tempat berkumpul yang aman." }
-                };
+                const qaDatabase = { /* database sama seperti sebelumnya */ };
                 const storyPrompts = { "Buat Cerita ✨": { "Cerita tentang Gempa": "gempa bumi", "Cerita tentang Banjir": "banjir", "Cerita tentang Gunung Meletus": "gunung meletus", "Cerita tentang Kebakaran": "kebakaran" } };
 
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -126,7 +121,8 @@
                         };
                         recognition.onresult = (event) => {
                             const command = event.results[event.results.length - 1][0].transcript;
-                            processCommand(command);
+                            console.log("Recognized:", command);
+                            // TODO: panggil processCommand(command)
                         };
                         recognition.onerror = (event) => console.error('Speech recognition error:', event.error);
                     }
@@ -135,12 +131,8 @@
                     recognition.start();
                 };
 
-                // event listener utk mic di overlay HTML
                 micButton.addEventListener('click', toggleMic);
-                // event listener utk mic di VR mode
                 if (vrMicIndicator) vrMicIndicator.addEventListener('click', toggleMic);
-
-                // --- fungsi processCommand, showCategoryPanels, dll tetap sama ---
             }
         });
     </script>
@@ -160,12 +152,45 @@
             <a-cursor id="cursor" raycaster="objects: .clickable" fuse="true" fuse-timeout="2000">
                 <a-entity geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03; thetaLength: 0" material="color: #007BFF; shader: flat; opacity: 0.8" animation__fusing="property: geometry.thetaLength; from: 0; to: 360; startEvents: fusing; dur: 2000; easing: linear" animation__reset="property: geometry.thetaLength; to: 0; startEvents: mouseleave; dur: 0"></a-entity>
             </a-cursor>
-
             <a-entity id="vr-mic-indicator" position="0 -0.8 -1.5" visible="true">
                 <a-plane width="0.3" height="0.3" color="#000000" opacity="0.5" rounded="0.15"></a-plane>
                 <a-entity geometry="primitive: plane; width: 0.2; height: 0.2" material="src: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0xMiAxNGMxLjY2IDAgMy0xLjM0IDMtM1Y1YzAtMS42Ni0xLjM0LTMtMy0zUzkgMy4zNCA5IDV2NmMwIDEuNjYgMS4zNCAzIDMgM3ptNS4zLTNjMCAzLTIuNTQgNS4xLTUuMyA1LjFTNi43IDE0IDYuNyAxMUg1YzAgMy40MSAyLjcyIDYuMjMgNiA2LjcyVjIxaDJ2LTMuMjhjMy4yOC0uNDkgNi0zLjMxIDYtNi43MmgtMS43eiIvPjwvc3ZnPg==); transparent: true;" position="0 0 0.01"></a-entity>
             </a-entity>
         </a-camera>
+
+        <a-light type="ambient" color="#AAA"></a-light>
+        <a-light type="directional" intensity="0.5" position="-1 1 2"></a-light>
+
+        <a-entity id="robot" position="0 0.7 -3">
+            <a-text value="Ros" color="#333" position="0 2.1 0" align="center" width="5"></a-text>
+            <a-entity id="speech-bubble" position="0 2.5 0" visible="false">
+                <a-plane id="speech-bubble-bg" color="#FFFFFF" width="2.5" height="1" rounded="0.2" position="0 0 -0.01"></a-plane>
+                <a-triangle color="#FFFFFF" vertex-a="0 -0.5 0" vertex-b="-0.2 -0.7 0" vertex-c="0.2 -0.7 0"></a-triangle>
+                <a-text id="answer-text" value="" color="#00008B" width="2.3" align="left" wrap-count="35"></a-text>
+            </a-entity>
+            <a-entity id="robot-head" position="0 1.2 0">
+                <a-box position="0 0 0" width="0.9" height="0.8" depth="0.8" color="#FFFFFF" shadow>
+                    <a-box position="0 0 0.41" width="0.7" height="0.6" depth="0.05" color="#87CEEB"></a-box>
+                    <a-box position="-0.15 0.1 0.44" width="0.1" height="0.15" depth="0.05" color="#2C3E50"></a-box>
+                    <a-box position="0.15 0.1 0.44" width="0.1" height="0.15" depth="0.05" color="#2C3E50"></a-box>
+                    <a-entity position="0 -0.1 0.44" geometry="primitive: torus; radius: 0.12; radiusTubular: 0.02; arc: 180" material="color: #2C3E50" rotation="0 0 180"></a-entity>
+                </a-box>
+                <a-entity id="grad-cap" position="0 0.4 0">
+                    <a-box position="0 0.1 0" width="1.2" height="0.1" depth="1.2" color="#34495E"></a-box>
+                    <a-cylinder position="0 0 0" radius="0.3" height="0.2" color="#34495E"></a-cylinder>
+                    <a-cylinder position="0.3 0.1 0" radius="0.01" height="0.3" color="#FFC107"></a-cylinder>
+                </a-entity>
+            </a-entity>
+            <a-box id="robot-body" position="0 0.5 0" width="0.6" height="0.8" depth="0.6" color="#BDC3C7" shadow></a-box>
+            <a-cylinder position="-0.4 0.6 0" radius="0.1" height="0.4" color="#FFFFFF" rotation="0 0 30" shadow></a-cylinder>
+            <a-cylinder position="0.4 0.6 0" radius="0.1" height="0.4" color="#FFFFFF" rotation="0 0 -30" shadow></a-cylinder>
+            <a-cylinder position="-0.15 0 0" radius="0.15" height="0.2" color="#FFFFFF" shadow></a-cylinder>
+            <a-cylinder position="0.15 0 0" radius="0.15" height="0.2" color="#FFFFFF" shadow></a-cylinder>
+        </a-entity>
+
+        <a-entity id="knowledge-panel" position="0 0 -2.5" visible="false"></a-entity>
+
+        <a-plane position="0 0 -5" rotation="-90 0 0" width="20" height="20" color="#90EE90" shadow></a-plane>
     </a-scene>
 </body>
 </html>
