@@ -114,13 +114,9 @@
                     }, 50);
                 };
                 
-                // ======================================================================
-                // === PERBAIKAN 1: `disablePanels()` dihapus dari fungsi ini ===
-                // ======================================================================
                 const giveAnswer = (answer, onEndCallback) => {
                     canListen = false;
                     if (isListening) { recognition.stop(); }
-                    // disablePanels(); // <-- BARIS INI DIHAPUS
                     typeText(answer); 
                     speechBubbleEl.setAttribute('visible', 'true'); 
                     robotHeadEl.setAttribute('animation', { property: 'rotation', to: '0 -10 0', dir: 'alternate', loop: true, dur: 500 });
@@ -138,17 +134,43 @@
                     speechSynthesis.speak(utterance);
                 };
 
+                // ======================================================================
+                // === FUNGSI INI DIPERBARUI DENGAN LOGGING ERROR YANG LEBIH BAIK ===
+                // ======================================================================
                 const getGenerativeAnswer = async (question) => {
                     giveAnswer("Hmm, sebentar ya, aku pikirkan dulu...", () => {});
                     const apiUrl = '/api/generate';
                     try {
-                        const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: question }) });
-                        if (!response.ok) { const errorResult = await response.json(); console.error("API Error Response:", errorResult); throw new Error(`API request failed with status ${response.status}`); }
+                        const response = await fetch(apiUrl, { 
+                            method: 'POST', 
+                            headers: { 'Content-Type': 'application/json' }, 
+                            body: JSON.stringify({ question: question }) 
+                        });
+
+                        // Jika response dari server BUKAN 200 OK
+                        if (!response.ok) {
+                            // Coba baca pesan error dari server
+                            const errorResult = await response.json();
+                            // Tampilkan pesan error detail di konsol untuk debugging
+                            console.error("API Error Response from /api/generate:", errorResult);
+                            console.error("Status Code:", response.status);
+                            // Lemparkan error agar ditangkap oleh blok catch
+                            throw new Error(errorResult.error || `Request failed with status ${response.status}`);
+                        }
+
                         const result = await response.json();
                         const text = result.answer;
-                        giveAnswer(text, () => { canListen = true; startListening(); showCategoryPanels(); });
+
+                        // Pastikan ada teks jawaban sebelum melanjutkan
+                        if (text) {
+                            giveAnswer(text, () => { canListen = true; startListening(); showCategoryPanels(); });
+                        } else {
+                            throw new Error("Jawaban dari API kosong.");
+                        }
+
                     } catch (error) {
-                        console.error("Error fetching from backend:", error);
+                        // Blok ini akan menangkap semua jenis error (jaringan, server, dll)
+                        console.error("Gagal total saat memanggil getGenerativeAnswer:", error);
                         giveAnswer("Aduh, otakku sedang istirahat. Coba lagi nanti ya.", () => { canListen = true; startListening(); showCategoryPanels(); });
                     }
                 };
@@ -184,13 +206,13 @@
                         }
                         
                         if (foundAnswer) {
-                            // ======================================================================
-                            // === PERBAIKAN 2: `disablePanels()` dipindahkan ke sini ===
-                            // ======================================================================
-                            disablePanels(); // Sembunyikan panel SEBELUM Ros menjawab.
+                            disablePanels();
                             giveAnswer(foundAnswer, () => { canListen = true; startListening(); showCategoryPanels(); });
                         } else {
-                            if (!isFromPanel) { getGenerativeAnswer(command); }
+                            if (!isFromPanel) { 
+                                disablePanels(); // Sembunyikan panel sebelum memanggil AI
+                                getGenerativeAnswer(command); 
+                            }
                         }
                     }
                 };
@@ -347,9 +369,6 @@
         <a-light type="ambient" color="#AAA"></a-light>
         <a-light type="directional" intensity="0.5" position="-1 1 2"></a-light>
 
-        <!-- ====================================================================== -->
-        <!-- === PERBAIKAN 3: Posisi Z diubah dari -3.5 menjadi -2.5 === -->
-        <!-- ====================================================================== -->
         <a-entity id="knowledge-panel" position="0 0.2 -2.5" visible="false"></a-entity>
 
         <a-entity id="mic-restart-btn"
