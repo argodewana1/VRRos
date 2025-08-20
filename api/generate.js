@@ -1,5 +1,5 @@
 // File: /api/generate.js
-// VERSI PERBAIKAN: Menggunakan data CSV sebagai basis pengetahuan untuk AI
+// VERSI PERBAIKAN: Menambahkan logika untuk menjawab pertanyaan umum
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -20,8 +20,6 @@ export default async function handler(req, res) {
     const modelId = "gemini-1.5-flash-latest";
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
 
-    // --- PERUBAHAN UTAMA: Menambahkan data CSV ke dalam prompt ---
-    // Data ini berfungsi sebagai "otak" atau basis pengetahuan untuk Ros.
     const knowledgeBase = `
         Pertanyaan,Jawaban
         Apa itu bencana alam?,"Bencana alam adalah kejadian besar dari alam yang bisa merusak lingkungan dan membahayakan orang, seperti gempa, banjir, atau gunung meletus."
@@ -46,7 +44,7 @@ export default async function handler(req, res) {
         Mengapa kita harus latihan simulasi bencana?,Supaya kita siap dan tahu apa yang harus dilakukan jika bencana terjadi.
     `;
 
-    // Prompt baru yang menginstruksikan AI untuk menggunakan knowledgeBase
+    // --- PERUBAHAN UTAMA: Menambahkan aturan baru untuk pertanyaan umum ---
     const fullPrompt = `
         Kamu adalah ROS (Robot Of Safety), robot asisten yang ramah untuk anak-anak SD.
         Tugasmu adalah menjawab pertanyaan tentang kesiapsiagaan bencana HANYA BERDASARKAN data CSV berikut.
@@ -59,7 +57,8 @@ export default async function handler(req, res) {
         Aturan:
         1. Jawabanmu harus singkat, jelas, dan sesuai dengan data di atas.
         2. Jangan menambah informasi di luar data tersebut.
-        3. Jika pertanyaan tidak bisa dijawab dari data, katakan dengan sopan: "Hmm, Ros belum belajar tentang itu. Coba tanya yang lain ya!"
+        3. Jika pertanyaannya bersifat umum seperti 'apa yang kamu tahu?' atau 'jelaskan semua yang kamu tahu', jawab dengan merangkum topik-topik utama dari DATA PENGETAHUAN. Contoh jawaban: 'Tentu! Ros tahu banyak tentang persiapan bencana, seperti apa itu gempa bumi dan banjir, apa yang harus dilakukan saat evakuasi, dan barang apa saja yang perlu ada di tas siaga bencana. Kamu mau tanya tentang yang mana?'
+        4. Jika pertanyaan tidak bisa dijawab dari data, katakan dengan sopan: "Hmm, Ros belum belajar tentang itu. Coba tanya yang lain ya!"
         
         Jawab pertanyaan berikut: "${question}"
     `;
