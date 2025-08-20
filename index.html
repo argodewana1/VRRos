@@ -75,13 +75,13 @@
                 let userName = '';
                 let typeInterval;
 
-                // --- Q&A DATABASE (Categorized) ---
-                const qaDatabase = {
-                    "Dasar Bencana": { "Apa itu bencana alam?": "Bencana alam adalah kejadian besar dari alam yang bisa merusak lingkungan dan membahayakan orang.", "Apa itu mitigasi bencana?": "Mitigasi bencana adalah usaha untuk mengurangi risiko bahaya sebelum bencana terjadi.", "Kenapa kita harus belajar tentang bencana?": "Supaya kita tahu cara melindungi diri dan membantu orang lain.", "Apa itu evakuasi?": "Evakuasi adalah pindah ke tempat aman saat ada bahaya.", "Apa itu jalur evakuasi?": "Jalan atau rute yang harus dilalui untuk menuju tempat aman." },
-                    "Gempa & Gunung": { "Apa itu gempa bumi?": "Getaran di permukaan bumi karena pergerakan lempeng bumi.", "Apa yang harus dilakukan saat gempa bumi?": "Segera lindungi kepala, bersembunyi di bawah meja, dan jangan panik.", "Bagaimana cara aman keluar saat gempa di sekolah?": "Ikuti guru, jangan berlari, dan jaga jarak dari bangunan.", "Bagaimana tanda-tanda gunung akan meletus?": "Ada getaran, suara gemuruh, dan asap keluar dari puncak gunung." },
-                    "Banjir & Kebakaran": { "Kalau ada banjir, apa yang harus kita lakukan?": "Pindah ke tempat yang lebih tinggi dan aman, jangan main di air banjir.", "Apa yang tidak boleh dilakukan saat banjir?": "Jangan bermain di air banjir, jangan mendekati tiang listrik.", "Kalau ada kebakaran, apa yang harus dilakukan?": "Segera keluar dari bangunan, tutup hidung dan mulut dengan kain basah." },
-                    "Tindakan Penting": { "Apa itu tas siaga bencana?": "Tas berisi barang penting yang siap dibawa saat bencana.", "Apa yang harus dibawa saat mengungsi?": "Bawa barang penting seperti air minum, makanan, obat, dan pakaian secukupnya.", "Mengapa kita tidak boleh panik?": "Karena panik membuat kita sulit berpikir dan bertindak dengan benar.", "Bagaimana cara membantu teman saat bencana?": "Ajak dia ke tempat aman dan beri semangat.", "Kalau terpisah dari orang tua, apa yang harus dilakukan?": "Pergi ke posko atau tempat berkumpul yang aman." }
-                };
+                // --- PERUBAHAN: Database lokal dihapus, diganti dengan daftar kategori sederhana ---
+                const categories = [
+                    "Dasar Bencana",
+                    "Gempa & Gunung",
+                    "Banjir & Kebakaran",
+                    "Tindakan Penting"
+                ];
 
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 const speechSynthesis = window.speechSynthesis;
@@ -134,9 +134,6 @@
                     speechSynthesis.speak(utterance);
                 };
 
-                // ======================================================================
-                // === FUNGSI INI DIPERBARUI DENGAN LOGGING ERROR YANG LEBIH BAIK ===
-                // ======================================================================
                 const getGenerativeAnswer = async (question) => {
                     giveAnswer("Hmm, sebentar ya, aku pikirkan dulu...", () => {});
                     const apiUrl = '/api/generate';
@@ -147,41 +144,38 @@
                             body: JSON.stringify({ question: question }) 
                         });
 
-                        // Jika response dari server BUKAN 200 OK
                         if (!response.ok) {
-                            // Coba baca pesan error dari server
                             const errorResult = await response.json();
-                            // Tampilkan pesan error detail di konsol untuk debugging
                             console.error("API Error Response from /api/generate:", errorResult);
                             console.error("Status Code:", response.status);
-                            // Lemparkan error agar ditangkap oleh blok catch
                             throw new Error(errorResult.error || `Request failed with status ${response.status}`);
                         }
 
                         const result = await response.json();
                         const text = result.answer;
 
-                        // Pastikan ada teks jawaban sebelum melanjutkan
                         if (text) {
+                            // Setelah menjawab, tampilkan lagi panel kategori
                             giveAnswer(text, () => { canListen = true; startListening(); showCategoryPanels(); });
                         } else {
                             throw new Error("Jawaban dari API kosong.");
                         }
 
                     } catch (error) {
-                        // Blok ini akan menangkap semua jenis error (jaringan, server, dll)
                         console.error("Gagal total saat memanggil getGenerativeAnswer:", error);
                         giveAnswer("Aduh, otakku sedang istirahat. Coba lagi nanti ya.", () => { canListen = true; startListening(); showCategoryPanels(); });
                     }
                 };
                 
-                const processCommand = (command, isFromPanel = false) => {
-                    command = command.toLowerCase().trim();
+                // --- PERUBAHAN: Logika disederhanakan, semua pertanyaan langsung ke AI ---
+                const processCommand = (command) => {
+                    command = command.trim();
                     console.log('Perintah diterima:', command);
+
                     if (conversationState === 'WAITING_FOR_NAME') {
                         userName = command.split(' ').pop(); 
                         userName = userName.charAt(0).toUpperCase() + userName.slice(1);
-                        const greetingText = `Halo, ${userName}! Senang bertemu denganmu. Pilih kategori yang ingin kamu pelajari.`;
+                        const greetingText = `Halo, ${userName}! Senang bertemu denganmu. Pilih topik di depanmu, atau langsung tanyakan apa saja tentang bencana.`;
                         
                         showCategoryPanels();
                         conversationState = 'QNA';
@@ -191,63 +185,27 @@
                         });
 
                     } else if (conversationState === 'QNA') {
-                        let foundAnswer = null;
-                        if (isFromPanel) {
-                            for (const category in qaDatabase) { if (qaDatabase[category][command]) { foundAnswer = qaDatabase[category][command]; break; } }
-                        } else {
-                            let foundCategory = null;
-                            for (const categoryName in qaDatabase) {
-                                const keywords = categoryName.toLowerCase().replace('&', '').split(' ');
-                                const isMatch = keywords.some(keyword => keyword.length > 2 && command.includes(keyword));
-                                if (isMatch) { foundCategory = categoryName; break; }
-                            }
-                            if (foundCategory) { console.log(`Kategori terdeteksi: ${foundCategory}`); showQuestionPanels(foundCategory); return; }
-                            for (const category in qaDatabase) { for (const question in qaDatabase[category]) { if (command.includes(question.toLowerCase())) { foundAnswer = qaDatabase[category][question]; break; } } if(foundAnswer) break; }
-                        }
-                        
-                        if (foundAnswer) {
-                            disablePanels();
-                            giveAnswer(foundAnswer, () => { canListen = true; startListening(); showCategoryPanels(); });
-                        } else {
-                            if (!isFromPanel) { 
-                                disablePanels(); // Sembunyikan panel sebelum memanggil AI
-                                getGenerativeAnswer(command); 
-                            }
-                        }
+                        // Apapun inputnya (klik panel atau suara), langsung kirim ke AI
+                        disablePanels();
+                        // Tambahkan konteks jika input berasal dari klik panel
+                        const prompt = `Jelaskan tentang ${command}`;
+                        getGenerativeAnswer(prompt); 
                     }
                 };
 
                 const clearPanels = () => { while (knowledgePanelEl.firstChild) { knowledgePanelEl.removeChild(knowledgePanelEl.firstChild); } };
-                const showQuestionPanels = (category) => {
-                    clearPanels();
-                    const questions = qaDatabase[category];
-                    const questionKeys = Object.keys(questions);
-                    questionKeys.forEach((question, index) => {
-                        const panel = document.createElement('a-entity');
-                        panel.setAttribute('class', 'clickable');
-                        panel.setAttribute('position', `0 ${1.2 - index * 0.55} 0`);
-                        panel.innerHTML = `<a-plane color="#3498DB" width="3" height="0.5" rounded="0.1"></a-plane><a-text value="${question}" color="#FFFFFF" width="2.8" align="center" position="0 0 0.01"></a-text>`;
-                        panel.addEventListener('click', () => processCommand(question, true));
-                        knowledgePanelEl.appendChild(panel);
-                    });
-                    const backButton = document.createElement('a-entity');
-                    backButton.setAttribute('class', 'clickable');
-                    backButton.setAttribute('position', `0 ${1.2 - questionKeys.length * 0.55} 0`);
-                    backButton.innerHTML = `<a-plane color="#E74C3C" width="3" height="0.5" rounded="0.1"></a-plane><a-text value="Kembali" color="#FFFFFF" width="2.8" align="center" position="0 0 0.01"></a-text>`;
-                    backButton.addEventListener('click', showCategoryPanels);
-                    knowledgePanelEl.appendChild(backButton);
-                    enablePanels();
-                };
                 
+                // --- PERUBAHAN: Fungsi showQuestionPanels dihapus ---
+
                 const showCategoryPanels = () => {
                     clearPanels();
-                    const categories = Object.keys(qaDatabase);
                     categories.forEach((category, index) => {
                         const panel = document.createElement('a-entity');
                         panel.setAttribute('class', 'clickable');
                         panel.setAttribute('position', `${(index - 1.5) * 2.5} 1.5 0`);
                         panel.innerHTML = `<a-plane color="#2ECC71" width="2.2" height="0.6" rounded="0.1"></a-plane><a-text value="${category}" color="#FFFFFF" width="2" align="center" position="0 0 0.01"></a-text>`;
-                        panel.addEventListener('click', () => showQuestionPanels(category));
+                        // Klik panel sekarang langsung memanggil processCommand dengan nama kategori
+                        panel.addEventListener('click', () => processCommand(category));
                         knowledgePanelEl.appendChild(panel);
                     });
                     enablePanels();
