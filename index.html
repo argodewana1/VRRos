@@ -2,105 +2,91 @@
 <html>
 <head>
     <title>VR Robot Asisten Ros</title>
-    <meta name="description" content="An interactive VR disaster preparedness assistant robot named Ros, powered by Generative AI.">
+    <meta name="description" content="An interactive VR disaster preparedness assistant robot for mobile phones.">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- A-Frame Library -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <style>
-        /* Styles for the UI overlay */
-        #ui-container {
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        /* UI Overlay untuk tombol mic dan instruksi */
+        #ui-overlay {
             position: absolute;
-            top: 0;
+            bottom: 0;
             left: 0;
             width: 100%;
             height: 100%;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-end;
             align-items: center;
             z-index: 10;
             font-family: Arial, sans-serif;
             text-align: center;
-            background-color: rgba(0, 0, 0, 0.5); /* Latar belakang gelap transparan */
+            pointer-events: none; /* Biarkan klik tembus ke scene A-Frame */
         }
-        #tutorial-container {
-            background-color: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            max-width: 500px;
-            margin-bottom: 20px;
-            text-align: left;
-        }
-        #tutorial-container h2 {
-            text-align: center;
-            color: #333;
-            margin-top: 0;
-        }
-        #tutorial-container ol {
-            padding-left: 20px;
-        }
-        #tutorial-container li {
-            margin-bottom: 10px;
-            color: #555;
-        }
-        #start-btn {
-            padding: 15px 30px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 10px;
-            border: none;
+        #mic-button {
+            width: 80px;
+            height: 80px;
             background-color: #4CAF50;
-            color: white;
-            margin-bottom: 20px;
-        }
-        #keyboard-input-container {
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 20px;
-            border-radius: 10px;
-            display: none; /* Sembunyikan di awal */
-        }
-        #text-input {
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            margin-right: 10px;
-        }
-        #send-btn {
-            padding: 10px 20px;
-            font-size: 16px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             cursor: pointer;
-            border-radius: 5px;
-            border: none;
-            background-color: #008CBA;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: all 0.2s ease;
+            pointer-events: auto; /* Tombol ini bisa diklik */
+        }
+        #mic-button:active {
+            transform: scale(0.95);
+        }
+        #mic-button.listening {
+            background-color: #F44336;
+            animation: pulse 1.5s infinite;
+        }
+        #mic-icon {
+            width: 40px;
+            height: 40px;
+            fill: white;
+        }
+        #initial-instruction {
             color: white;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 20px;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(244, 67, 54, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
         }
     </style>
     <script>
-        // This component handles the voice recognition logic, TTS, and robot animation.
         AFRAME.registerComponent('voice-listener', {
             init: function() {
                 // --- SETUP ---
                 const answerTextEl = document.querySelector('#answer-text');
                 const speechBubbleEl = document.querySelector('#speech-bubble');
+                const speechBubbleBgEl = document.querySelector('#speech-bubble-bg');
                 const robotHeadEl = document.querySelector('#robot-head');
                 const sceneEl = this.el;
                 const knowledgePanelEl = document.querySelector('#knowledge-panel');
-                const cursorEl = document.querySelector('#cursor');
-
+                
                 // UI Elements
-                const tutorialContainer = document.getElementById('tutorial-container');
-                const startBtn = document.getElementById('start-btn');
-                const keyboardContainer = document.getElementById('keyboard-input-container');
-                const textInput = document.getElementById('text-input');
-                const sendBtn = document.getElementById('send-btn');
+                const micButton = document.getElementById('mic-button');
+                const initialInstruction = document.getElementById('initial-instruction');
                 
                 let conversationState = 'IDLE';
                 let userName = '';
                 let typeInterval;
 
-                // --- Q&A DATABASE (Categorized) ---
+                // --- Q&A DATABASE (Local Knowledge) ---
                 const qaDatabase = {
                     "Dasar Bencana": { "Apa itu bencana alam?": "Bencana alam adalah kejadian besar dari alam yang bisa merusak lingkungan dan membahayakan orang.", "Apa itu mitigasi bencana?": "Mitigasi bencana adalah usaha untuk mengurangi risiko bahaya sebelum bencana terjadi.", "Kenapa kita harus belajar tentang bencana?": "Supaya kita tahu cara melindungi diri dan membantu orang lain.", "Apa itu evakuasi?": "Evakuasi adalah pindah ke tempat aman saat ada bahaya.", "Apa itu jalur evakuasi?": "Jalan atau rute yang harus dilalui untuk menuju tempat aman." },
                     "Gempa & Gunung": { "Apa itu gempa bumi?": "Getaran di permukaan bumi karena pergerakan lempeng bumi.", "Apa yang harus dilakukan saat gempa bumi?": "Segera lindungi kepala, bersembunyi di bawah meja, dan jangan panik.", "Bagaimana cara aman keluar saat gempa di sekolah?": "Ikuti guru, jangan berlari, dan jaga jarak dari bangunan.", "Bagaimana tanda-tanda gunung akan meletus?": "Ada getaran, suara gemuruh, dan asap keluar dari puncak gunung." },
@@ -108,82 +94,108 @@
                     "Tindakan Penting": { "Apa itu tas siaga bencana?": "Tas berisi barang penting yang siap dibawa saat bencana.", "Apa yang harus dibawa saat mengungsi?": "Bawa barang penting seperti air minum, makanan, obat, dan pakaian secukupnya.", "Mengapa kita tidak boleh panik?": "Karena panik membuat kita sulit berpikir dan bertindak dengan benar.", "Bagaimana cara membantu teman saat bencana?": "Ajak dia ke tempat aman dan beri semangat.", "Kalau terpisah dari orang tua, apa yang harus dilakukan?": "Pergi ke posko atau tempat berkumpul yang aman." }
                 };
                 
-                // --- Story Prompts ---
                 const storyPrompts = { "Buat Cerita ✨": { "Cerita tentang Gempa": "gempa bumi", "Cerita tentang Banjir": "banjir", "Cerita tentang Gunung Meletus": "gunung meletus", "Cerita tentang Kebakaran": "kebakaran" } };
 
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 const speechSynthesis = window.speechSynthesis;
                 let recognition;
-                let isListening = false;
-                let canListen = false;
+                let indonesianVoice = null;
+
+                function findIndonesianVoice() {
+                    const voices = speechSynthesis.getVoices();
+                    indonesianVoice = voices.find(voice => voice.lang === 'id-ID') || voices.find(voice => voice.name.includes('Indonesian'));
+                }
+                findIndonesianVoice();
+                if (speechSynthesis.onvoiceschanged !== undefined) {
+                    speechSynthesis.onvoiceschanged = findIndonesianVoice;
+                }
 
                 const disablePanels = () => { knowledgePanelEl.setAttribute('visible', 'false'); knowledgePanelEl.querySelectorAll('a-entity').forEach(p => p.classList.remove('clickable')); };
                 const enablePanels = () => { knowledgePanelEl.setAttribute('visible', 'true'); knowledgePanelEl.querySelectorAll('a-entity').forEach(p => p.classList.add('clickable')); };
-
-                const startListening = () => { if (!recognition || isListening || !canListen) return; try { recognition.start(); isListening = true; console.log("Mulai mendengarkan..."); } catch(e) { console.error("Error starting recognition:", e); } };
 
                 const typeText = (text) => {
                     clearInterval(typeInterval);
                     answerTextEl.setAttribute('value', '');
                     let i = 0;
-                    typeInterval = setInterval(() => { if (i < text.length) { answerTextEl.setAttribute('value', text.substring(0, i + 1)); i++; } else { clearInterval(typeInterval); } }, 50);
+                    typeInterval = setInterval(() => { if (i < text.length) { answerTextEl.setAttribute('value', text.substring(0, i + 1)); i++; } else { clearInterval(typeInterval); } }, 40);
                 };
                 
+                // --- PERBAIKAN: Fungsi untuk menyesuaikan ukuran gelembung teks ---
+                const updateSpeechBubble = (text) => {
+                    const textWidth = 2.3; // Lebar a-text
+                    const wrapCount = 35; // wrap-count a-text
+                    const baseHeight = 0.6; // Tinggi minimum gelembung
+                    const heightPerLine = 0.2; // Perkiraan tinggi per baris teks
+                    
+                    const lines = Math.ceil(text.length / wrapCount * (textWidth / 1.5)); // Heuristik untuk menghitung jumlah baris
+                    const newHeight = baseHeight + (lines * heightPerLine);
+
+                    speechBubbleBgEl.setAttribute('height', newHeight);
+                    speechBubbleEl.setAttribute('visible', 'true');
+                    typeText(text);
+                };
+
                 const giveAnswer = (answer, onEndCallback) => {
-                    canListen = false;
-                    if (isListening) { recognition.stop(); isListening = false; }
                     disablePanels();
-                    typeText(answer); speechBubbleEl.setAttribute('visible', 'true');
+                    updateSpeechBubble(answer);
                     robotHeadEl.setAttribute('animation', { property: 'rotation', to: '0 -10 0', dir: 'alternate', loop: true, dur: 500 });
+                    
                     const utterance = new SpeechSynthesisUtterance(answer);
-                    utterance.lang = 'id-ID'; utterance.pitch = 0.5; utterance.rate = 0.8;
-                    utterance.onend = () => { robotHeadEl.removeAttribute('animation'); robotHeadEl.setAttribute('rotation', '0 0 0'); if (onEndCallback) { onEndCallback(); } };
+                    utterance.lang = 'id-ID';
+                    utterance.pitch = 1;
+                    utterance.rate = 1;
+                    if (indonesianVoice) utterance.voice = indonesianVoice;
+
+                    utterance.onend = () => { robotHeadEl.removeAttribute('animation'); robotHeadEl.setAttribute('rotation', '0 0 0'); if (onEndCallback) onEndCallback(); };
                     speechSynthesis.speak(utterance);
                 };
 
                 const getGenerativeAnswer = async (question) => {
                     giveAnswer("Hmm, sebentar ya, aku pikirkan dulu...", () => showCategoryPanels());
-                    const prompt = `Jelaskan untuk anak SD: ${question}`;
-                    const apiUrl = `/api/generate`;
+                    // --- PERBAIKAN: Prompt diubah untuk jawaban singkat ---
+                    const prompt = `Jawab pertanyaan ini dengan singkat dan sederhana untuk anak SD (maksimal 2 kalimat): ${question}`;
                     try {
-                        const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt }) });
-                        if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                        const response = await fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
+                        if (!response.ok) throw new Error(`API request failed`);
                         const result = await response.json();
-                        const text = result.answer;
-                        giveAnswer(text, () => { canListen = true; startListening(); showCategoryPanels(); });
+                        giveAnswer(result.answer, () => showCategoryPanels());
                     } catch (error) {
-                        console.error("Error fetching from our API:", error);
-                        giveAnswer("Aduh, otakku sedang istirahat. Coba lagi nanti ya.", () => { canListen = true; startListening(); showCategoryPanels(); });
+                        console.error("Error fetching from API:", error);
+                        giveAnswer("Aduh, otakku sedang istirahat. Coba lagi nanti ya.", () => showCategoryPanels());
                     }
                 };
 
                 const getGenerativeStory = async (topic) => {
                     giveAnswer(`Oke, aku akan coba buatkan cerita tentang ${topic}...`, null);
-                    const prompt = `Buatkan cerita anak-anak untuk anak SD, sekitar 3 sampai 4 paragraf pendek, tentang ${topic}. Ceritanya harus mendidik, menceritakan apa yang harus dilakukan dengan cara yang positif dan tidak menakutkan. Gunakan tokoh anak-anak seperti Budi atau Ani.`;
-                    const apiUrl = `/api/generate`;
+                    const prompt = `Buatkan cerita anak-anak untuk anak SD, sekitar 3 paragraf pendek, tentang ${topic}. Ceritanya harus mendidik, menceritakan apa yang harus dilakukan dengan cara yang positif dan tidak menakutkan. Gunakan tokoh anak-anak seperti Budi atau Ani.`;
                     try {
-                        const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt }) });
+                        const response = await fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
                         if (!response.ok) throw new Error(`API request failed`);
                         const result = await response.json();
-                        const text = result.answer;
-                        giveAnswer(text, () => { canListen = true; startListening(); showCategoryPanels(); });
+                        giveAnswer(result.answer, () => showCategoryPanels());
                     } catch (error) {
-                        console.error("Error fetching story from our API:", error);
-                        giveAnswer("Aduh, imajinasiku sedang macet. Coba lagi nanti ya.", () => { canListen = true; startListening(); showCategoryPanels(); });
+                        console.error("Error fetching story from API:", error);
+                        giveAnswer("Aduh, imajinasiku sedang macet. Coba lagi nanti ya.", () => showCategoryPanels());
                     }
                 };
                 
                 const processCommand = (command) => {
-                    const lowerCaseCommand = command.toLowerCase().trim(); console.log('Perintah diterima:', command);
+                    const lowerCaseCommand = command.toLowerCase().trim();
+                    if (conversationState === 'IDLE') {
+                        conversationState = 'INTRODUCTION';
+                        const introText = "Halo, namaku Ros. Aku robot asisten untuk membantumu memahami bencana. Kalau boleh tahu, nama kamu siapa?";
+                        giveAnswer(introText, () => { conversationState = 'WAITING_FOR_NAME'; });
+                        return;
+                    }
                     if (conversationState === 'WAITING_FOR_NAME') {
                         userName = command.split(' ').pop(); userName = userName.charAt(0).toUpperCase() + userName.slice(1);
                         const greetingText = `Halo, ${userName}! Senang bertemu denganmu. Pilih kategori yang ingin kamu pelajari.`;
-                        giveAnswer(greetingText, () => { conversationState = 'QNA'; canListen = true; startListening(); showCategoryPanels(); });
+                        giveAnswer(greetingText, () => { conversationState = 'QNA'; showCategoryPanels(); });
                     } else if (conversationState === 'QNA') {
                         let foundAnswer = null;
                         for (const category in qaDatabase) { if (qaDatabase[category][command]) { foundAnswer = qaDatabase[category][command]; break; } }
-                        if (!foundAnswer) { for (const category in qaDatabase) { for (const question in qaDatabase[category]) { if (lowerCaseCommand.includes(question.toLowerCase())) { foundAnswer = qaDatabase[category][question]; break; } } if(foundAnswer) break; } }
-                        if (foundAnswer) { giveAnswer(foundAnswer, () => { canListen = true; startListening(); showCategoryPanels(); }); } else { getGenerativeAnswer(command); }
+                        if (!foundAnswer) { for (const category in qaDatabase) { for (const question in qaDatabase[category]) { if (lowerCaseCommand.includes(question.toLowerCase().substring(0,15))) { foundAnswer = qaDatabase[category][question]; break; } } if(foundAnswer) break; } }
+                        if (foundAnswer) { giveAnswer(foundAnswer, () => showCategoryPanels()); } else { getGenerativeAnswer(command); }
                     }
                 };
                 
@@ -229,59 +241,59 @@
                     enablePanels();
                 };
 
-                const handleIntroduction = () => {
-                    conversationState = 'INTRODUCTION';
-                    const introText = "Halo, namaku Ros. Aku robot asisten untuk membantumu memahami bencana.";
-                    giveAnswer(introText, () => {
-                        const askNameText = "Kalau boleh tahu, nama kamu siapa?";
-                        giveAnswer(askNameText, () => { conversationState = 'WAITING_FOR_NAME'; canListen = true; startListening(); });
-                    });
-                };
+                // --- PERBAIKAN: Logika Tombol Mikrofon ---
+                micButton.addEventListener('click', () => {
+                    if (!SpeechRecognition) {
+                        alert("Maaf, browser ini tidak mendukung fitur suara.");
+                        return;
+                    }
 
-                startBtn.addEventListener('click', () => {
-                    if (!SpeechRecognition || !speechSynthesis) { alert("Maaf, browser ini tidak mendukung fitur suara."); return; }
-                    recognition = new SpeechRecognition();
-                    recognition.lang = 'id-ID'; recognition.interimResults = false; recognition.continuous = true;
-                    recognition.onresult = (event) => { const last = event.results.length - 1; const command = event.results[last][0].transcript; processCommand(command); };
-                    recognition.onerror = (event) => { console.error('Speech recognition error:', event.error); isListening = false; };
-                    recognition.onend = () => { isListening = false; if (canListen) { startListening(); } };
+                    if (!recognition) {
+                        recognition = new SpeechRecognition();
+                        recognition.lang = 'id-ID';
+                        recognition.interimResults = false;
+                        recognition.continuous = false; // Penting: berhenti setelah 1 kalimat
+                        
+                        recognition.onstart = () => {
+                            micButton.classList.add('listening');
+                        };
+                        
+                        recognition.onend = () => {
+                            micButton.classList.remove('listening');
+                        };
+                        
+                        recognition.onresult = (event) => {
+                            const command = event.results[event.results.length - 1][0].transcript;
+                            processCommand(command);
+                        };
+                        
+                        recognition.onerror = (event) => {
+                            console.error('Speech recognition error:', event.error);
+                        };
+                    }
                     
-                    handleIntroduction();
-                    tutorialContainer.style.display = 'none';
-                    startBtn.style.display = 'none';
-                    keyboardContainer.style.display = 'block'; // Tampilkan input keyboard
+                    // Sembunyikan instruksi awal setelah klik pertama
+                    if (initialInstruction) {
+                        initialInstruction.style.display = 'none';
+                    }
+
+                    recognition.start();
                 });
 
-                sendBtn.addEventListener('click', () => {
-                    const command = textInput.value;
-                    if (command) { if (conversationState === 'IDLE') { startBtn.click(); } else { processCommand(command); } textInput.value = ''; }
-                });
-
-                textInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') { sendBtn.click(); } });
-                sceneEl.addEventListener('enter-vr', () => keyboardContainer.style.display = 'none');
-                sceneEl.addEventListener('exit-vr', () => keyboardContainer.style.display = 'block');
                 disablePanels();
             }
         });
     </script>
 </head>
-<body style="margin : 0px; overflow: hidden;">
+<body>
     
-    <div id="ui-container">
-        <div id="tutorial-container">
-            <h2>✨ Cara Pakai Asisten Ros ✨</h2>
-            <ol>
-                <li>Tekan tombol <strong>"Mulai Bicara"</strong> untuk menyapa Ros.</li>
-                <li>Saat browser meminta izin, klik <strong>"Allow"</strong> atau <strong>"Izinkan"</strong> agar Ros bisa mendengar suaramu.</li>
-                <li>Jawab pertanyaan Ros dengan jelas, misalnya sebutkan namamu.</li>
-                <li>Pilih topik dengan mengarahkan titik putih ke tombol, lalu <strong>tunggu sampai lingkarannya penuh</strong>.</li>
-                <li>Kamu juga bisa bertanya lewat ketikan di bagian bawah layar.</li>
-            </ol>
-        </div>
-        <button id="start-btn">Mulai Bicara dengan Ros</button>
-        <div id="keyboard-input-container">
-            <input type="text" id="text-input" placeholder="Atau ketik di sini...">
-            <button id="send-btn">Kirim</button>
+    <!-- UI Overlay untuk Tombol Mikrofon dan Instruksi Awal -->
+    <div id="ui-overlay">
+        <div id="initial-instruction">Ketuk ikon mikrofon untuk bicara dengan Ros</div>
+        <div id="mic-button" title="Ketuk untuk Bicara">
+            <svg id="mic-icon" viewBox="0 0 24 24">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z"/>
+            </svg>
         </div>
     </div>
 
@@ -305,9 +317,10 @@
         <a-entity id="robot" position="0 0.7 -3">
             <a-text value="Ros" color="#333" position="0 2.1 0" align="center" width="5"></a-text>
             <a-entity id="speech-bubble" position="0 2.5 0" visible="false">
-                <a-plane color="#FFFFFF" width="2.5" height="1" rounded="0.2" position="0 0 -0.01"></a-plane>
+                <!-- PERBAIKAN: Latar belakang dipisah agar bisa diubah ukurannya -->
+                <a-plane id="speech-bubble-bg" color="#FFFFFF" width="2.5" height="1" rounded="0.2" position="0 0 -0.01"></a-plane>
                 <a-triangle color="#FFFFFF" vertex-a="0 -0.5 0" vertex-b="-0.2 -0.7 0" vertex-c="0.2 -0.7 0"></a-triangle>
-                <a-text id="answer-text" value="" color="#00008B" width="2.3" align="center" wrap-count="35"></a-text>
+                <a-text id="answer-text" value="" color="#00008B" width="2.3" align="left" wrap-count="35"></a-text>
             </a-entity>
             <a-entity id="robot-head" position="0 1.2 0">
                 <a-box position="0 0 0" width="0.9" height="0.8" depth="0.8" color="#FFFFFF" shadow>
