@@ -32,6 +32,11 @@
             display: none; /* Hidden by default */
         }
 
+        /* Hide A-Frame's default VR button until we're ready */
+        .a-enter-vr {
+            display: none !important;
+        }
+
         #duo-mascot {
             width: 120px;
             height: 100px;
@@ -366,6 +371,16 @@
                 this.handleIntroduction();
             },
 
+            stopExperience: function() {
+                this.canListen = false;
+                if (this.recognition && this.isListening) {
+                    this.recognition.stop();
+                }
+                this.speechSynthesis.cancel(); // Stop any ongoing speech
+                this.speechBubbleEl.setAttribute('visible', 'false');
+                this.conversationState = 'IDLE';
+            },
+
             startListening: function() {
                 if (!this.recognition || this.isListening || !this.canListen) return;
                 try {
@@ -475,12 +490,8 @@
             const quizContainer = document.getElementById('quiz-container');
             const quizContent = document.getElementById('quiz-content');
             const backToMenuBtn = document.getElementById('back-to-menu-btn');
-            const progressBar = document.getElementById('progress-bar');
-            const questionText = document.getElementById('question-text');
-            const optionsContainer = document.getElementById('options-container');
-            const explanationContainer = document.getElementById('explanation-container');
-            const explanationText = document.getElementById('explanation-text');
-            const nextQuestionBtn = document.getElementById('next-question-btn');
+            const backToMenuVrBtn = document.getElementById('back-to-menu-vr-btn');
+            const enterVrUi = document.querySelector('.a-enter-vr');
 
             if (sceneEl.hasLoaded) {
                 sceneEl.pause();
@@ -495,11 +506,25 @@
 
             startVrExperienceBtn.addEventListener('click', () => {
                 vrTutorialContainer.style.display = 'none';
+                if(enterVrUi) enterVrUi.style.display = 'block !important';
                 sceneEl.play();
                 if (sceneEl.components['voice-listener']) {
                     sceneEl.components['voice-listener'].startExperience();
                 }
             });
+            
+            backToMenuVrBtn.addEventListener('click', () => {
+                if (sceneEl.is('vr-mode')) {
+                    sceneEl.exitVR();
+                }
+                sceneEl.pause();
+                if (sceneEl.components['voice-listener']) {
+                    sceneEl.components['voice-listener'].stopExperience();
+                }
+                uiContainer.style.display = 'flex';
+                if(enterVrUi) enterVrUi.style.display = 'none !important';
+            });
+
 
             const quizData = [
                 { question: "Apa itu bencana alam?", options: ["Peristiwa yang menyenangkan", "Peristiwa besar yang bisa merusak lingkungan dan membahayakan manusia", "Acara hiburan di sekolah", "Permainan di rumah"], answer: "B", explanation: "Bencana alam adalah kejadian dari alam yang berbahaya dan bisa menyebabkan kerusakan besar serta korban jiwa." },
@@ -545,15 +570,6 @@
             backToMenuBtn.addEventListener('click', () => {
                 quizContainer.style.display = 'none';
                 uiContainer.style.display = 'flex';
-            });
-
-            nextQuestionBtn.addEventListener('click', () => {
-                currentQuestionIndex++;
-                if (currentQuestionIndex < quizData.length) {
-                    showQuestion();
-                } else {
-                    endQuiz();
-                }
             });
 
             function startQuiz() {
@@ -762,6 +778,16 @@
                     animation__scale="property: scale; to: 1.2 1.2 1.2; dir: alternate; loop: true; dur: 1000; startEvents: mouseenter"
                     animation__scale_reverse="property: scale; to: 1 1 1; dur: 500; startEvents: mouseleave">
             <a-text value="Mic" align="center" position="0 0.2 0" width="1.5"></a-text>
+        </a-entity>
+
+        <a-entity id="back-to-menu-vr-btn"
+            geometry="primitive: box; width: 0.8; height: 0.25; depth: 0.1"
+            material="color: #f39c12; opacity: 0.9"
+            position="-1.5 0.5 -2.5" rotation="0 15 0"
+            class="clickable"
+            animation__scale="property: scale; to: 1.1 1.1 1.1; dir: alternate; loop: true; dur: 1000; startEvents: mouseenter"
+            animation__scale_reverse="property: scale; to: 1 1 1; dur: 500; startEvents: mouseleave">
+            <a-text value="Kembali ke Menu" align="center" width="2"></a-text>
         </a-entity>
 
         <a-entity id="robot" position="0 0.7 -3" rotation="0 0 0">
