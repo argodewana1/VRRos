@@ -8,9 +8,10 @@
     <style>
         body {
             font-family: 'Arial', sans-serif;
+            font-weight: bold;
         }
-        /* Styles for the UI overlay */
-        #ui-container, #name-input-container {
+        /* Styles for the UI overlay (Duolingo Style) */
+        #ui-container, #name-input-container, #vr-tutorial-container {
             position: absolute;
             top: 0;
             left: 0;
@@ -22,89 +23,172 @@
             align-items: center;
             z-index: 10;
             text-align: center;
-            background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+            background-color: #eaf8ff; /* Duolingo-like light blue background */
             gap: 20px;
             padding: 20px;
+            box-sizing: border-box;
         }
-        #name-input-container {
+        #name-input-container, #vr-tutorial-container {
             display: none; /* Hidden by default */
         }
-        #ui-title, #name-title {
-            font-size: 3em;
-            color: white;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+
+        #duo-mascot {
+            width: 120px;
+            height: 100px;
+            background-color: #FFFFFF;
+            border-radius: 15px;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border: 2px solid #e5e5e5;
+            margin-bottom: 10px;
+        }
+        #duo-mascot::before { /* Screen */
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            background-color: #87CEEB;
+            border-radius: 8px;
+        }
+        #duo-mascot::after { /* Eyes */
+            content: '';
+            position: absolute;
+            top: 35px;
+            left: 30px;
+            width: 12px;
+            height: 20px;
+            background-color: #2C3E50;
+            border-radius: 4px;
+            box-shadow: 45px 0 0 #2C3E50; /* Right Eye using box-shadow trick */
+        }
+
+
+        #ui-title, #name-title, #vr-tutorial-title {
+            font-size: 2.5em;
+            color: #3C3C3C;
+            text-shadow: none;
             margin: 0;
         }
-        #ui-subtitle {
+        #ui-subtitle, #vr-tutorial-text {
             font-size: 1.2em;
-            color: white;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-            margin-top: -10px;
+            color: #777;
+            text-shadow: none;
+            margin-top: -15px;
             max-width: 500px;
+            line-height: 1.5;
+        }
+        #vr-tutorial-text strong {
+            color: #3C3C3C;
         }
         #name-input-field {
             padding: 15px;
             font-size: 1.2em;
-            border-radius: 10px;
-            border: none;
-            width: 80%;
-            max-width: 400px;
+            border-radius: 12px;
+            border: 2px solid #e5e5e5;
+            border-bottom-width: 4px;
+            width: 90%;
+            max-width: 350px;
             text-align: center;
         }
         #button-wrapper {
             display: flex;
-            gap: 20px;
+            flex-direction: column; /* Stacked */
+            gap: 15px;
             margin-top: 20px;
+            width: 90%;
+            max-width: 350px;
         }
         .menu-btn {
-            padding: 15px 30px;
+            padding: 15px 20px;
             font-size: 18px;
             cursor: pointer;
-            border-radius: 50px;
-            border: 2px solid white;
+            border-radius: 12px;
             color: white;
-            background-color: transparent;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .menu-btn:hover {
-            background-color: white;
-            color: #5C6BC0;
-            transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-        }
-        #start-vr-btn, #submit-name-btn {
-            background-color: #4CAF50; /* Green */
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            font-weight: bold;
             border: none;
         }
-        #quiz-btn {
-             background-color: #008CBA; /* Blue */
-             border: none;
+        .menu-btn:hover {
+            transform: translateY(-2px);
         }
 
-        /* Styles for the Quiz */
+        #quiz-btn {
+            background-color: #58a700; /* Duolingo Green */
+            border-bottom: 4px solid #4a8d00;
+        }
+        #quiz-btn:hover { background-color: #62b800; }
+
+        #start-vr-btn {
+            background-color: #1cb0f6; /* Duolingo Blue */
+            border-bottom: 4px solid #1899d6;
+        }
+        #start-vr-btn:hover { background-color: #2cc1ff; }
+
+        #submit-name-btn, #start-vr-experience-btn {
+            background-color: #58a700;
+            border-bottom: 4px solid #4a8d00;
+            width: 90%;
+            max-width: 350px;
+        }
+
+        /* Styles for the Quiz (Duolingo Style) */
         #quiz-container {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            display: none; /* Changed from flex to none */
-            justify-content: center;
-            align-items: center;
+            display: none;
+            flex-direction: column;
             z-index: 11;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: #eaf8ff; /* Light blue background */
         }
+        #quiz-header {
+            width: 100%;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-sizing: border-box;
+        }
+        #back-to-menu-btn {
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: #aaa;
+        }
+        #progress-bar-container {
+            flex-grow: 1;
+            height: 16px;
+            background-color: #e5e5e5;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: #58a700; /* Duolingo green */
+            transition: width 0.3s ease-in-out;
+        }
+
         #quiz-content {
-             background-color: white;
-            padding: 30px;
-            border-radius: 15px;
-            width: 90%;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            width: 100%;
             max-width: 600px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            margin: 0 auto;
+            box-sizing: border-box;
         }
         #question-text {
-            font-size: 22px;
+            font-size: 24px;
+            font-weight: bold;
             margin-bottom: 20px;
             color: #333;
         }
@@ -115,269 +199,307 @@
         }
         .option-btn {
             padding: 15px;
-            font-size: 16px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background-color: #f9f9f9;
+            font-size: 18px;
+            font-weight: bold;
+            border: 2px solid #e5e5e5;
+            border-bottom-width: 4px;
+            border-radius: 12px;
+            background-color: white;
             cursor: pointer;
             text-align: left;
-            transition: background-color 0.3s;
+            transition: background-color 0.2s;
+            color: #444;
         }
         .option-btn:hover:not([disabled]) {
-            background-color: #e9e9e9;
+            background-color: #f7f7f7;
         }
         .option-btn.correct {
-            background-color: #4CAF50 !important;
-            color: white;
+            background-color: #d7ffb8 !important;
+            border-color: #58a700 !important;
+            color: #58a700 !important;
         }
         .option-btn.incorrect {
-            background-color: #f44336 !important;
-            color: white;
+            background-color: #ffdfe0 !important;
+            border-color: #ff4b4b !important;
+            color: #ff4b4b !important;
+        }
+        #feedback-container {
+            padding: 20px;
+            margin-top: auto;
+            border-top: 2px solid #e5e5e5;
         }
         #explanation-container {
             display: none;
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #e3f2fd;
-            border-left: 5px solid #2196F3;
-            border-radius: 5px;
         }
         #explanation-text {
             margin: 0;
             font-size: 16px;
+            font-weight: bold;
+        }
+        #explanation-text.correct { color: #58a700; }
+        #explanation-text.incorrect { color: #ff4b4b; }
+
+        #next-question-btn {
+            display: none;
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background-color: #58a700;
+            border: none;
+            border-bottom: 4px solid #4a8d00;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 20px;
         }
         #score-text {
             font-size: 20px;
             margin-bottom: 20px;
             color: #555;
             line-height: 1.5;
+            text-align: center;
+        }
+        /* Badge Styles */
+        #badge-container {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .trophy-svg {
+            width: 90px;
+            height: 90px;
+        }
+        .trophy-svg .gold { fill: url(#gold-gradient); }
+        .trophy-svg .silver { fill: url(#silver-gradient); }
+        .trophy-svg .bronze { fill: url(#bronze-gradient); }
+
+        #badge-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 10px;
+            color: #3C3C3C;
         }
 
     </style>
     <script>
         let userNameGlobal = '';
 
-        // This component handles the voice recognition logic, TTS, and robot animation.
         AFRAME.registerComponent('voice-listener', {
             init: function() {
-                // --- SETUP ---
-                const answerTextEl = document.querySelector('#answer-text');
-                const speechBubbleEl = document.querySelector('#speech-bubble');
-                const robotHeadEl = document.querySelector('#robot-head');
-                const sceneEl = this.el;
-
-                // UI Elements
-                const startBtn = document.getElementById('start-vr-btn');
+                this.answerTextEl = document.querySelector('#answer-text');
+                this.speechBubbleEl = document.querySelector('#speech-bubble');
+                this.robotHeadEl = document.querySelector('#robot-head');
                 
-                let conversationState = 'IDLE';
-                let typeInterval;
+                this.conversationState = 'IDLE';
+                this.typeInterval = null;
+                this.recognition = null;
+                this.isListening = false;
+                this.canListen = false;
 
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                const speechSynthesis = window.speechSynthesis;
-                let recognition;
+                if (SpeechRecognition) {
+                    this.recognition = new SpeechRecognition();
+                }
+                this.speechSynthesis = window.speechSynthesis;
 
-                let isListening = false;
-                let canListen = false;
-
-                const startListening = () => {
-                    if (!recognition || isListening || !canListen) return;
-                    try {
-                        recognition.start();
-                    } catch(e) { console.error("Error starting recognition:", e); }
-                };
-
-                const typeText = (text) => {
-                    clearInterval(typeInterval);
-                    answerTextEl.setAttribute('value', '');
-                    let i = 0;
-                    typeInterval = setInterval(() => {
-                        if (i < text.length) {
-                            answerTextEl.setAttribute('value', text.substring(0, i + 1));
-                            i++;
-                        } else {
-                            clearInterval(typeInterval);
-                        }
-                    }, 50);
-                };
-                
-                const giveAnswer = (answer, onEndCallback) => {
-                    canListen = false;
-                    if (isListening) { recognition.stop(); }
-                    typeText(answer); 
-                    speechBubbleEl.setAttribute('visible', 'true'); 
-                    robotHeadEl.setAttribute('animation', { property: 'rotation', to: '0 -10 0', dir: 'alternate', loop: true, dur: 500 });
-                    const utterance = new SpeechSynthesisUtterance(answer);
-                    utterance.lang = 'id-ID';
-                    utterance.pitch = 0.5;
-                    utterance.rate = 0.8;
-                    utterance.onend = function() {
-                        robotHeadEl.removeAttribute('animation');
-                        robotHeadEl.setAttribute('rotation', '0 0 0');
-                        if (onEndCallback) {
-                            onEndCallback();
-                        }
-                    };
-                    speechSynthesis.speak(utterance);
-                };
-
-                const getGenerativeAnswer = async (question) => {
-                    speechBubbleEl.setAttribute('visible', 'true');
-                    giveAnswer("Hmm, sebentar ya, aku pikirkan dulu...", () => {});
-                    const apiUrl = '/api/generate';
-                    try {
-                        const response = await fetch(apiUrl, { 
-                            method: 'POST', 
-                            headers: { 'Content-Type': 'application/json' }, 
-                            body: JSON.stringify({ question: question }) 
-                        });
-
-                        if (!response.ok) {
-                            const errorResult = await response.json();
-                            console.error("API Error Response from /api/generate:", errorResult);
-                            console.error("Status Code:", response.status);
-                            throw new Error(errorResult.error || `Request failed with status ${response.status}`);
-                        }
-
-                        const result = await response.json();
-                        const text = result.answer;
-
-                        if (text) {
-                            giveAnswer(text, () => { canListen = true; startListening(); });
-                        } else {
-                            throw new Error("Jawaban dari API kosong.");
-                        }
-
-                    } catch (error) {
-                        console.error("Gagal total saat memanggil getGenerativeAnswer:", error);
-                        giveAnswer("Aduh, otakku sedang istirahat. Coba lagi nanti ya.", () => { canListen = true; startListening(); });
-                    }
-                };
-                
-                const processCommand = (command) => {
-                    command = command.trim();
-                    console.log('Perintah diterima:', command);
-
-                    if (conversationState === 'WAITING_FOR_NAME') {
-                        let userName = command.split(' ').pop(); 
-                        userName = userName.charAt(0).toUpperCase() + userName.slice(1);
-                        userNameGlobal = userName; // Save to global variable
-                        localStorage.setItem('siTangguhUserName', userNameGlobal); // Save to local storage
-                        
-                        const greetingText = `Halo, ${userNameGlobal}! Senang bertemu denganmu. Langsung saja tanyakan apa saja tentang bencana alam.`;
-                        
-                        conversationState = 'QNA';
-                        giveAnswer(greetingText, () => { 
-                            canListen = true; 
-                            startListening(); 
-                        });
-
-                    } else if (conversationState === 'QNA') {
-                        getGenerativeAnswer(command); 
-                    }
-                };
-
-                const handleIntroduction = () => {
-                     // Check if name already exists from quiz session
-                    if (userNameGlobal) {
-                        conversationState = 'QNA';
-                        const greetingText = `Halo, ${userNameGlobal}! Senang bertemu denganmu. Langsung saja tanyakan apa saja tentang bencana alam.`;
-                        giveAnswer(greetingText, () => {
-                            canListen = true;
-                            startListening();
-                        });
-                    } else { // If no name, do the full introduction
-                        conversationState = 'INTRODUCTION';
-                        const introText = "Halo, namaku Si Tangguh. Aku robot asisten untuk membantumu memahami bencana.";
-                        giveAnswer(introText, () => {
-                            const askNameText = "Kalau boleh tahu, nama kamu siapa?";
-                            giveAnswer(askNameText, () => { conversationState = 'WAITING_FOR_NAME'; canListen = true; startListening(); });
-                        });
-                    }
-                };
-
-                startBtn.addEventListener('click', () => {
-                     document.getElementById('ui-container').style.display = 'none'; // Hide menu to enter VR
-                    if (!SpeechRecognition || !speechSynthesis) {
-                        alert("Maaf, browser ini tidak mendukung fitur suara.");
-                        return;
-                    }
-                    recognition = new SpeechRecognition();
-                    recognition.lang = 'id-ID';
-                    recognition.interimResults = false;
-                    recognition.continuous = true;
-
-                    recognition.onresult = (event) => {
-                        const last = event.results.length - 1;
-                        const command = event.results[last][0].transcript;
-                        canListen = false;
-                        recognition.stop();
-                        processCommand(command);
-                    };
-
-                    recognition.onerror = (event) => {
-                        isListening = false;
-                        if (event.error === 'not-allowed') {
-                            console.error("FATAL: Microphone permission was denied.");
-                            canListen = false;
-                            giveAnswer("Si Tangguh tidak bisa mendengar. Coba cek izin mikrofon di browser kamu ya.", () => {});
-                        }
-                        else if (event.error === 'no-speech') {
-                            console.log("No speech detected, recognition stopped.");
-                        } else {
-                            console.error('Speech recognition error:', event.error);
-                        }
-                    };
-
-                    recognition.onend = () => {
-                        isListening = false;
-                        if (canListen) {
-                            console.log("Recognition service ended, restarting...");
-                            setTimeout(() => startListening(), 100); 
-                        } else {
-                            console.log("Recognition service ended intentionally.");
-                        }
-                    };
-                    
-                    recognition.onstart = () => {
-                        isListening = true;
-                        console.log("Speech recognition active.");
-                    };
-
-                    handleIntroduction();
+                document.querySelector('#mic-restart-btn').addEventListener('click', () => {
+                     console.log("Manual mic restart requested.");
+                     this.canListen = true;
+                     this.startListening();
                 });
+            },
+
+            startExperience: function() {
+                if (!this.recognition || !this.speechSynthesis) {
+                    alert("Maaf, browser ini tidak mendukung fitur suara.");
+                    return;
+                }
                 
-                const micRestartBtn = document.querySelector('#mic-restart-btn');
-                if (micRestartBtn) {
-                    micRestartBtn.addEventListener('click', () => {
-                        console.log("Manual mic restart requested.");
-                        micRestartBtn.setAttribute('material', 'color', '#2ECC71');
-                        canListen = true;
-                        startListening();
-                        setTimeout(() => {
-                            micRestartBtn.setAttribute('material', 'color', '#E74C3C');
-                        }, 1500);
+                this.recognition.lang = 'id-ID';
+                this.recognition.interimResults = false;
+                this.recognition.continuous = true;
+
+                this.recognition.onresult = (event) => {
+                    const last = event.results.length - 1;
+                    const command = event.results[last][0].transcript;
+                    this.canListen = false;
+                    this.recognition.stop();
+                    this.processCommand(command);
+                };
+
+                this.recognition.onerror = (event) => {
+                    this.isListening = false;
+                    if (event.error === 'not-allowed') {
+                        console.error("FATAL: Microphone permission was denied.");
+                        this.canListen = false;
+                        this.giveAnswer("Si Tangguh tidak bisa mendengar. Coba cek izin mikrofon di browser kamu ya.", () => {});
+                    } else if (event.error === 'no-speech') {
+                        console.log("No speech detected, recognition stopped.");
+                    } else {
+                        console.error('Speech recognition error:', event.error);
+                    }
+                };
+
+                this.recognition.onend = () => {
+                    this.isListening = false;
+                    if (this.canListen) {
+                        console.log("Recognition service ended, restarting...");
+                        setTimeout(() => this.startListening(), 100); 
+                    } else {
+                        console.log("Recognition service ended intentionally.");
+                    }
+                };
+                
+                this.recognition.onstart = () => {
+                    this.isListening = true;
+                    console.log("Speech recognition active.");
+                };
+
+                this.handleIntroduction();
+            },
+
+            startListening: function() {
+                if (!this.recognition || this.isListening || !this.canListen) return;
+                try {
+                    this.recognition.start();
+                } catch(e) { console.error("Error starting recognition:", e); }
+            },
+
+            typeText: function(text) {
+                clearInterval(this.typeInterval);
+                this.answerTextEl.setAttribute('value', '');
+                let i = 0;
+                this.typeInterval = setInterval(() => {
+                    if (i < text.length) {
+                        this.answerTextEl.setAttribute('value', text.substring(0, i + 1));
+                        i++;
+                    } else {
+                        clearInterval(this.typeInterval);
+                    }
+                }, 50);
+            },
+            
+            giveAnswer: function(answer, onEndCallback) {
+                this.canListen = false;
+                if (this.isListening) { this.recognition.stop(); }
+                this.typeText(answer); 
+                this.speechBubbleEl.setAttribute('visible', 'true'); 
+                this.robotHeadEl.setAttribute('animation', { property: 'rotation', to: '0 -10 0', dir: 'alternate', loop: true, dur: 500 });
+                const utterance = new SpeechSynthesisUtterance(answer);
+                utterance.lang = 'id-ID';
+                utterance.pitch = 0.5;
+                utterance.rate = 0.8;
+                utterance.onend = () => {
+                    this.robotHeadEl.removeAttribute('animation');
+                    this.robotHeadEl.setAttribute('rotation', '0 0 0');
+                    if (onEndCallback) onEndCallback();
+                };
+                this.speechSynthesis.speak(utterance);
+            },
+
+            getGenerativeAnswer: async function(question) {
+                this.speechBubbleEl.setAttribute('visible', 'true');
+                this.giveAnswer("Hmm, sebentar ya, aku pikirkan dulu...", () => {});
+                const apiUrl = '/api/generate';
+                try {
+                    const response = await fetch(apiUrl, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ question: question }) 
+                    });
+                    if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+                    const result = await response.json();
+                    if (result.answer) {
+                        this.giveAnswer(result.answer, () => { this.canListen = true; this.startListening(); });
+                    } else {
+                        throw new Error("Jawaban dari API kosong.");
+                    }
+                } catch (error) {
+                    console.error("Gagal total saat memanggil getGenerativeAnswer:", error);
+                    this.giveAnswer("Aduh, otakku sedang istirahat. Coba lagi nanti ya.", () => { this.canListen = true; this.startListening(); });
+                }
+            },
+            
+            processCommand: function(command) {
+                command = command.trim();
+                console.log('Perintah diterima:', command);
+                if (this.conversationState === 'WAITING_FOR_NAME') {
+                    let userName = command.split(' ').pop();
+                    userName = userName.charAt(0).toUpperCase() + userName.slice(1);
+                    userNameGlobal = userName;
+                    localStorage.setItem('siTangguhUserName', userNameGlobal);
+                    const greetingText = `Halo, ${userNameGlobal}! Senang bertemu denganmu. Langsung saja tanyakan apa saja tentang bencana alam.`;
+                    this.conversationState = 'QNA';
+                    this.giveAnswer(greetingText, () => { this.canListen = true; this.startListening(); });
+                } else if (this.conversationState === 'QNA') {
+                    this.getGenerativeAnswer(command); 
+                }
+            },
+
+            handleIntroduction: function() {
+                if (userNameGlobal) {
+                    this.conversationState = 'QNA';
+                    const greetingText = `Halo, ${userNameGlobal}! Senang bertemu denganmu. Langsung saja tanyakan apa saja tentang bencana alam.`;
+                    this.giveAnswer(greetingText, () => { this.canListen = true; this.startListening(); });
+                } else {
+                    this.conversationState = 'INTRODUCTION';
+                    const introText = "Halo, namaku Si Tangguh. Aku robot asisten untuk membantumu memahami bencana.";
+                    this.giveAnswer(introText, () => {
+                        const askNameText = "Kalau boleh tahu, nama kamu siapa?";
+                        this.giveAnswer(askNameText, () => { this.conversationState = 'WAITING_FOR_NAME'; this.canListen = true; this.startListening(); });
                     });
                 }
             }
         });
 
-        // Quiz Logic
         document.addEventListener('DOMContentLoaded', () => {
-            // Load name from local storage on start
             userNameGlobal = localStorage.getItem('siTangguhUserName') || '';
 
+            const sceneEl = document.querySelector('a-scene');
             const quizBtn = document.getElementById('quiz-btn');
-            const quizContainer = document.getElementById('quiz-container');
-            const questionText = document.getElementById('question-text');
-            const optionsContainer = document.getElementById('options-container');
-            const explanationContainer = document.getElementById('explanation-container');
-            const explanationText = document.getElementById('explanation-text');
             const startVrBtn = document.getElementById('start-vr-btn');
             const uiContainer = document.getElementById('ui-container');
             const nameInputContainer = document.getElementById('name-input-container');
             const nameInputField = document.getElementById('name-input-field');
             const submitNameBtn = document.getElementById('submit-name-btn');
+            const vrTutorialContainer = document.getElementById('vr-tutorial-container');
+            const startVrExperienceBtn = document.getElementById('start-vr-experience-btn');
+            const quizContainer = document.getElementById('quiz-container');
+            const quizContent = document.getElementById('quiz-content');
+            const backToMenuBtn = document.getElementById('back-to-menu-btn');
+            const progressBar = document.getElementById('progress-bar');
+            const questionText = document.getElementById('question-text');
+            const optionsContainer = document.getElementById('options-container');
+            const explanationContainer = document.getElementById('explanation-container');
+            const explanationText = document.getElementById('explanation-text');
+            const nextQuestionBtn = document.getElementById('next-question-btn');
 
+            if (sceneEl.hasLoaded) {
+                sceneEl.pause();
+            } else {
+                sceneEl.addEventListener('loaded', () => sceneEl.pause());
+            }
+
+            startVrBtn.addEventListener('click', () => {
+                uiContainer.style.display = 'none';
+                vrTutorialContainer.style.display = 'flex';
+            });
+
+            startVrExperienceBtn.addEventListener('click', () => {
+                vrTutorialContainer.style.display = 'none';
+                sceneEl.play();
+                if (sceneEl.components['voice-listener']) {
+                    sceneEl.components['voice-listener'].startExperience();
+                }
+            });
 
             const quizData = [
                 { question: "Apa itu bencana alam?", options: ["Peristiwa yang menyenangkan", "Peristiwa besar yang bisa merusak lingkungan dan membahayakan manusia", "Acara hiburan di sekolah", "Permainan di rumah"], answer: "B", explanation: "Bencana alam adalah kejadian dari alam yang berbahaya dan bisa menyebabkan kerusakan besar serta korban jiwa." },
@@ -418,12 +540,21 @@
                 }
             });
 
-            nameInputField.addEventListener('keyup', (event) => {
-                if (event.key === 'Enter') {
-                    submitNameBtn.click();
-                }
+            nameInputField.addEventListener('keyup', (event) => { if (event.key === 'Enter') { submitNameBtn.click(); } });
+            
+            backToMenuBtn.addEventListener('click', () => {
+                quizContainer.style.display = 'none';
+                uiContainer.style.display = 'flex';
             });
 
+            nextQuestionBtn.addEventListener('click', () => {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < quizData.length) {
+                    showQuestion();
+                } else {
+                    endQuiz();
+                }
+            });
 
             function startQuiz() {
                 quizContainer.style.display = 'flex';
@@ -431,18 +562,44 @@
                 score = 0;
                 showQuestion();
             }
+            
+            function updateProgressBar() {
+                const progress = ((currentQuestionIndex) / quizData.length) * 100;
+                progressBar.style.width = `${progress}%`;
+            }
 
             function showQuestion() {
-                explanationContainer.style.display = 'none'; // Hide previous explanation
-                optionsContainer.innerHTML = '';
+                quizContent.innerHTML = `
+                    <div>
+                        <h2 id="question-text"></h2>
+                        <div id="options-container"></div>
+                    </div>
+                    <div id="feedback-container">
+                        <div id="explanation-container" style="display:none;">
+                            <p id="explanation-text"></p>
+                        </div>
+                        <button id="next-question-btn" style="display:none;">Lanjutkan</button>
+                    </div>`;
+
+                document.getElementById('next-question-btn').addEventListener('click', () => {
+                    currentQuestionIndex++;
+                    if (currentQuestionIndex < quizData.length) showQuestion();
+                    else endQuiz();
+                });
+
+                updateProgressBar();
                 const currentQuestion = quizData[currentQuestionIndex];
-                questionText.textContent = `(${currentQuestionIndex + 1}/${quizData.length}) ${currentQuestion.question}`;
+                document.getElementById('question-text').textContent = currentQuestion.question;
+                const optionsContainer = document.getElementById('options-container');
 
                 currentQuestion.options.forEach((option, index) => {
                     const button = document.createElement('button');
                     button.className = 'option-btn';
-                    const optionLetter = String.fromCharCode(65 + index); // A, B, C, D
-                    button.textContent = `${optionLetter}. ${option}`;
+                    const optionLetter = String.fromCharCode(65 + index);
+                    button.innerHTML = `<strong>${optionLetter}</strong><p style="margin:0; padding-left:10px;">${option}</p>`;
+                    button.style.display = 'flex';
+                    button.style.alignItems = 'center';
+
                     button.dataset.answer = optionLetter;
                     button.addEventListener('click', () => selectAnswer(button, currentQuestion));
                     optionsContainer.appendChild(button);
@@ -452,60 +609,95 @@
             function selectAnswer(selectedButton, currentQuestion) {
                 const selectedAnswer = selectedButton.dataset.answer;
                 const correctAnswer = currentQuestion.answer;
-                const allOptions = optionsContainer.querySelectorAll('.option-btn');
+                const allOptions = document.querySelectorAll('#options-container .option-btn');
 
                 allOptions.forEach(btn => {
-                    btn.disabled = true; // Disable all buttons
-                    if (btn.dataset.answer === correctAnswer) {
-                        btn.classList.add('correct');
-                    } else if (btn === selectedButton) {
-                        btn.classList.add('incorrect');
-                    }
+                    btn.disabled = true;
+                    if (btn.dataset.answer === correctAnswer) btn.classList.add('correct');
+                    else if (btn === selectedButton) btn.classList.add('incorrect');
                 });
+
+                const explanationTextEl = document.getElementById('explanation-text');
+                explanationTextEl.textContent = `Penjelasan: ${currentQuestion.explanation}`;
+                document.getElementById('explanation-container').style.display = 'block';
+                document.getElementById('next-question-btn').style.display = 'block';
 
                 if (selectedAnswer === correctAnswer) {
                     score++;
+                    explanationTextEl.className = 'correct';
+                } else {
+                    explanationTextEl.className = 'incorrect';
                 }
-
-                // Show explanation
-                explanationText.textContent = `Penjelasan: ${currentQuestion.explanation}`;
-                explanationContainer.style.display = 'block';
-
-                setTimeout(() => {
-                    currentQuestionIndex++;
-                    if (currentQuestionIndex < quizData.length) {
-                        showQuestion();
-                    } else {
-                        endQuiz();
-                    }
-                }, 4000); // Wait 4 seconds to allow reading explanation
             }
 
             function endQuiz() {
-                questionText.textContent = 'Kuis Selesai!';
-                let appreciationText = `Kerja bagus, ${userNameGlobal || 'Sobat Tangguh'}! Kamu sekarang jadi lebih tahu cara melindungi diri saat bencana. Hebat!`;
-                appreciationText += `<br><br>Skor Akhir Kamu: ${score} dari ${quizData.length}`;
+                updateProgressBar();
+                progressBar.style.width = '100%';
+                let badgeHTML = '';
+                let appreciationText = '';
 
-                optionsContainer.innerHTML = `<p id="score-text">${appreciationText}</p>`;
-                explanationContainer.style.display = 'none';
+                const trophySVG = (colorClass) => `<svg class="trophy-svg" viewBox="0 0 100 100">
+                    <g class="${colorClass}">
+                        <path d="M20,30 Q15,40 20,50 L20,80 Q20,90 30,90 L70,90 Q80,90 80,80 L80,50 Q85,40 80,30 M50,90 L50,80 M30,50 Q50,45 70,50 M30,30 L70,30 Q75,20 70,10 L30,10 Q25,20 30,30 Z" stroke="white" stroke-width="3" />
+                    </g>
+                </svg>`;
+
+                if (score === 15) {
+                    badgeHTML = `<div id="badge-container">
+                                    ${trophySVG('gold')}
+                                    <h3 id="badge-title">Pahlawan Bencana!</h3>
+                                 </div>`;
+                    appreciationText = `Luar biasa, ${userNameGlobal || 'Sobat Tangguh'}! Kamu adalah Pahlawan Bencana!`;
+                } else if (score >= 10) {
+                    badgeHTML = `<div id="badge-container">
+                                    ${trophySVG('silver')}
+                                    <h3 id="badge-title">Ahli Mitigasi!</h3>
+                                 </div>`;
+                    appreciationText = `Hebat, ${userNameGlobal || 'Sobat Tangguh'}! Pengetahuanmu tentang bencana sudah sangat baik.`;
+                } else if (score >= 7) {
+                    badgeHTML = `<div id="badge-container">
+                                    ${trophySVG('bronze')}
+                                    <h3 id="badge-title">Sobat Siaga!</h3>
+                                 </div>`;
+                    appreciationText = `Bagus, ${userNameGlobal || 'Sobat Tangguh'}! Kamu punya dasar yang baik untuk jadi siaga bencana.`;
+                } else {
+                    appreciationText = `Terus belajar ya, ${userNameGlobal || 'Sobat Tangguh'}! Setiap pengetahuan baru membuat kita lebih aman.`;
+                }
+
+                appreciationText += `<br><br>Skor Akhir Kamu: ${score} dari ${quizData.length}`;
                 
-                const backButton = document.createElement('button');
-                backButton.textContent = 'Kembali ke Menu Utama';
-                backButton.className = 'menu-btn';
-                backButton.style.backgroundColor = '#008CBA';
-                backButton.style.border = 'none';
-                backButton.addEventListener('click', () => {
+                quizContent.innerHTML = badgeHTML + `<p id="score-text">${appreciationText}</p>
+                    <button id="finish-quiz-btn" class="menu-btn" style="background-color:#58a700; border-bottom: 4px solid #4a8d00; width: 100%;">Selesai</button>`;
+                
+                document.getElementById('finish-quiz-btn').addEventListener('click', () => {
                     quizContainer.style.display = 'none';
                     uiContainer.style.display = 'flex';
                 });
-                optionsContainer.appendChild(backButton);
             }
         });
     </script>
 </head>
 <body style="margin : 0px; overflow: hidden;">
+
+    <svg width="0" height="0" style="position:absolute;">
+        <defs>
+            <linearGradient id="gold-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#FFD700;" />
+                <stop offset="100%" style="stop-color:#FBB034;" />
+            </linearGradient>
+            <linearGradient id="silver-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#E0E0E0;" />
+                <stop offset="100%" style="stop-color:#BDBDBD;" />
+            </linearGradient>
+            <linearGradient id="bronze-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#CD7F32;" />
+                <stop offset="100%" style="stop-color:#A0522D;" />
+            </linearGradient>
+        </defs>
+    </svg>
     
     <div id="ui-container">
+        <div id="duo-mascot"></div>
         <h1 id="ui-title">Si Tangguh</h1>
         <p id="ui-subtitle">Asisten Cerdas Tanggap Bencana</p>
         <div id="button-wrapper">
@@ -520,13 +712,25 @@
         <button id="submit-name-btn" class="menu-btn">Lanjutkan</button>
     </div>
 
+    <div id="vr-tutorial-container">
+        <h2 id="vr-tutorial-title">Siap Masuk VR?</h2>
+        <p id="vr-tutorial-text">
+            Untuk pengalaman terbaik:<br>
+            1. Klik ikon <strong>kacamata VR</strong> di pojok kanan bawah setelah ini.<br>
+            2. Saat diminta, <strong>izinkan akses mikrofon</strong> agar kamu bisa berbicara dengan Si Tangguh.
+        </p>
+        <button id="start-vr-experience-btn" class="menu-btn">Saya Mengerti</button>
+    </div>
+
     <div id="quiz-container">
-        <div id="quiz-content">
-            <h2 id="question-text"></h2>
-            <div id="options-container"></div>
-            <div id="explanation-container">
-                <p id="explanation-text"></p>
+        <div id="quiz-header">
+            <button id="back-to-menu-btn">&times;</button>
+            <div id="progress-bar-container">
+                <div id="progress-bar"></div>
             </div>
+        </div>
+        <div id="quiz-content">
+            <!-- Quiz content will be dynamically generated here -->
         </div>
     </div>
 
