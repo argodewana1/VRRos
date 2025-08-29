@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>VR Robot ROS (ROBOT OF SAFETY )</title>
-    <meta name="description" content="An interactive VR disaster preparedness assistant robot named Ros, powered by Generative AI.">
+    <title>VR Si Tangguh (Robot Tangguh Bencana)</title>
+    <meta name="description" content="An interactive VR disaster preparedness assistant robot named Si Tangguh, powered by Generative AI, with an integrated quiz.">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <style>
+        body {
+            font-family: 'Arial', sans-serif;
+        }
         /* Styles for the UI overlay */
-        #ui-container {
+        #ui-container, #name-input-container {
             position: absolute;
             top: 0;
             left: 0;
@@ -18,42 +21,142 @@
             justify-content: center;
             align-items: center;
             z-index: 10;
-            font-family: Arial, sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+            gap: 20px;
+            padding: 20px;
+        }
+        #name-input-container {
+            display: none; /* Hidden by default */
+        }
+        #ui-title, #name-title {
+            font-size: 3em;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin: 0;
+        }
+        #ui-subtitle {
+            font-size: 1.2em;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            margin-top: -10px;
+            max-width: 500px;
+        }
+        #name-input-field {
+            padding: 15px;
+            font-size: 1.2em;
+            border-radius: 10px;
+            border: none;
+            width: 80%;
+            max-width: 400px;
             text-align: center;
         }
-        #start-btn {
+        #button-wrapper {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .menu-btn {
             padding: 15px 30px;
             font-size: 18px;
             cursor: pointer;
-            border-radius: 10px;
-            border: none;
-            background-color: #4CAF50;
+            border-radius: 50px;
+            border: 2px solid white;
             color: white;
+            background-color: transparent;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .menu-btn:hover {
+            background-color: white;
+            color: #5C6BC0;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+        #start-vr-btn, #submit-name-btn {
+            background-color: #4CAF50; /* Green */
+            border: none;
+        }
+        #quiz-btn {
+             background-color: #008CBA; /* Blue */
+             border: none;
+        }
+
+        /* Styles for the Quiz */
+        #quiz-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none; /* Changed from flex to none */
+            justify-content: center;
+            align-items: center;
+            z-index: 11;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        #quiz-content {
+             background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        #question-text {
+            font-size: 22px;
             margin-bottom: 20px;
+            color: #333;
         }
-        #keyboard-input-container {
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 20px;
-            border-radius: 10px;
+        #options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
-        #text-input {
-            padding: 10px;
+        .option-btn {
+            padding: 15px;
             font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            margin-right: 10px;
-        }
-        #send-btn {
-            padding: 10px 20px;
-            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
             cursor: pointer;
-            border-radius: 5px;
-            border: none;
-            background-color: #008CBA;
+            text-align: left;
+            transition: background-color 0.3s;
+        }
+        .option-btn:hover:not([disabled]) {
+            background-color: #e9e9e9;
+        }
+        .option-btn.correct {
+            background-color: #4CAF50 !important;
             color: white;
         }
+        .option-btn.incorrect {
+            background-color: #f44336 !important;
+            color: white;
+        }
+        #explanation-container {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e3f2fd;
+            border-left: 5px solid #2196F3;
+            border-radius: 5px;
+        }
+        #explanation-text {
+            margin: 0;
+            font-size: 16px;
+        }
+        #score-text {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #555;
+            line-height: 1.5;
+        }
+
     </style>
     <script>
+        let userNameGlobal = '';
+
         // This component handles the voice recognition logic, TTS, and robot animation.
         AFRAME.registerComponent('voice-listener', {
             init: function() {
@@ -64,13 +167,9 @@
                 const sceneEl = this.el;
 
                 // UI Elements
-                const startBtn = document.getElementById('start-btn');
-                const keyboardContainer = document.getElementById('keyboard-input-container');
-                const textInput = document.getElementById('text-input');
-                const sendBtn = document.getElementById('send-btn');
+                const startBtn = document.getElementById('start-vr-btn');
                 
                 let conversationState = 'IDLE';
-                let userName = '';
                 let typeInterval;
 
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -154,15 +253,17 @@
                     }
                 };
                 
-                // --- PERUBAHAN: Logika disederhanakan, semua pertanyaan langsung ke AI ---
                 const processCommand = (command) => {
                     command = command.trim();
                     console.log('Perintah diterima:', command);
 
                     if (conversationState === 'WAITING_FOR_NAME') {
-                        userName = command.split(' ').pop(); 
+                        let userName = command.split(' ').pop(); 
                         userName = userName.charAt(0).toUpperCase() + userName.slice(1);
-                        const greetingText = `Halo, ${userName}! Senang bertemu denganmu. Langsung saja tanyakan apa saja tentang bencana alam.`;
+                        userNameGlobal = userName; // Save to global variable
+                        localStorage.setItem('siTangguhUserName', userNameGlobal); // Save to local storage
+                        
+                        const greetingText = `Halo, ${userNameGlobal}! Senang bertemu denganmu. Langsung saja tanyakan apa saja tentang bencana alam.`;
                         
                         conversationState = 'QNA';
                         giveAnswer(greetingText, () => { 
@@ -171,21 +272,31 @@
                         });
 
                     } else if (conversationState === 'QNA') {
-                        // Apapun inputnya, langsung kirim ke AI
                         getGenerativeAnswer(command); 
                     }
                 };
 
                 const handleIntroduction = () => {
-                    conversationState = 'INTRODUCTION';
-                    const introText = "Halo, namaku Ros. Aku robot asisten untuk membantumu memahami bencana.";
-                    giveAnswer(introText, () => {
-                        const askNameText = "Kalau boleh tahu, nama kamu siapa?";
-                        giveAnswer(askNameText, () => { conversationState = 'WAITING_FOR_NAME'; canListen = true; startListening(); });
-                    });
+                     // Check if name already exists from quiz session
+                    if (userNameGlobal) {
+                        conversationState = 'QNA';
+                        const greetingText = `Halo, ${userNameGlobal}! Senang bertemu denganmu. Langsung saja tanyakan apa saja tentang bencana alam.`;
+                        giveAnswer(greetingText, () => {
+                            canListen = true;
+                            startListening();
+                        });
+                    } else { // If no name, do the full introduction
+                        conversationState = 'INTRODUCTION';
+                        const introText = "Halo, namaku Si Tangguh. Aku robot asisten untuk membantumu memahami bencana.";
+                        giveAnswer(introText, () => {
+                            const askNameText = "Kalau boleh tahu, nama kamu siapa?";
+                            giveAnswer(askNameText, () => { conversationState = 'WAITING_FOR_NAME'; canListen = true; startListening(); });
+                        });
+                    }
                 };
 
                 startBtn.addEventListener('click', () => {
+                     document.getElementById('ui-container').style.display = 'none'; // Hide menu to enter VR
                     if (!SpeechRecognition || !speechSynthesis) {
                         alert("Maaf, browser ini tidak mendukung fitur suara.");
                         return;
@@ -208,7 +319,7 @@
                         if (event.error === 'not-allowed') {
                             console.error("FATAL: Microphone permission was denied.");
                             canListen = false;
-                            giveAnswer("Ros tidak bisa mendengar. Coba cek izin mikrofon di browser kamu ya.", () => {});
+                            giveAnswer("Si Tangguh tidak bisa mendengar. Coba cek izin mikrofon di browser kamu ya.", () => {});
                         }
                         else if (event.error === 'no-speech') {
                             console.log("No speech detected, recognition stopped.");
@@ -233,21 +344,7 @@
                     };
 
                     handleIntroduction();
-                    startBtn.style.display = 'none';
                 });
-
-                sendBtn.addEventListener('click', () => {
-                    const command = textInput.value;
-                    if (command) {
-                        if (conversationState === 'IDLE') { handleIntroduction(); } else { processCommand(command); }
-                        textInput.value = '';
-                        startBtn.style.display = 'none';
-                    }
-                });
-
-                textInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') { sendBtn.click(); } });
-                sceneEl.addEventListener('enter-vr', () => { keyboardContainer.style.display = 'none'; });
-                sceneEl.addEventListener('exit-vr', () => { keyboardContainer.style.display = 'block'; });
                 
                 const micRestartBtn = document.querySelector('#mic-restart-btn');
                 if (micRestartBtn) {
@@ -263,15 +360,173 @@
                 }
             }
         });
+
+        // Quiz Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load name from local storage on start
+            userNameGlobal = localStorage.getItem('siTangguhUserName') || '';
+
+            const quizBtn = document.getElementById('quiz-btn');
+            const quizContainer = document.getElementById('quiz-container');
+            const questionText = document.getElementById('question-text');
+            const optionsContainer = document.getElementById('options-container');
+            const explanationContainer = document.getElementById('explanation-container');
+            const explanationText = document.getElementById('explanation-text');
+            const startVrBtn = document.getElementById('start-vr-btn');
+            const uiContainer = document.getElementById('ui-container');
+            const nameInputContainer = document.getElementById('name-input-container');
+            const nameInputField = document.getElementById('name-input-field');
+            const submitNameBtn = document.getElementById('submit-name-btn');
+
+
+            const quizData = [
+                { question: "Apa itu bencana alam?", options: ["Peristiwa yang menyenangkan", "Peristiwa besar yang bisa merusak lingkungan dan membahayakan manusia", "Acara hiburan di sekolah", "Permainan di rumah"], answer: "B", explanation: "Bencana alam adalah kejadian dari alam yang berbahaya dan bisa menyebabkan kerusakan besar serta korban jiwa." },
+                { question: "Jika terjadi gempa bumi, apa yang sebaiknya kita lakukan?", options: ["Berlari keluar rumah secepatnya tanpa hati-hati", "Bersembunyi di bawah meja atau tempat aman", "Berdiri di dekat jendela kaca", "Panik dan berteriak keras"], answer: "B", explanation: "Bersembunyi di bawah meja yang kokoh dapat melindungi kita dari benda-benda yang jatuh saat gempa." },
+                { question: "Mengapa kita perlu belajar tentang mitigasi bencana?", options: ["Supaya bisa libur sekolah", "Agar bisa bermain dengan teman", "Supaya tahu cara mengurangi bahaya saat bencana", "Karena itu pelajaran paling mudah"], answer: "C", explanation: "Mitigasi bencana membantu kita untuk lebih siap dan tahu cara mengurangi risiko serta dampak buruk saat bencana terjadi." },
+                { question: "Jika ada banjir, apa yang harus kita lakukan?", options: ["Bermain air di jalanan", "Naik ke tempat yang lebih tinggi dan aman", "Menyimpan mainan di air", "Diam saja di dalam rumah tanpa peduli"], answer: "B", explanation: "Saat banjir, air akan terus naik. Pindah ke tempat yang lebih tinggi adalah cara paling aman untuk menghindari bahaya." },
+                { question: "Alat apa yang bisa dipakai untuk melindungi diri dari asap kebakaran?", options: ["Payung", "Masker atau kain basah", "Helm sepeda", "Sepatu baru"], answer: "B", explanation: "Masker atau kain yang dibasahi dapat menyaring partikel berbahaya dari asap agar tidak terhirup oleh kita." },
+                { question: "Apa yang harus kita persiapkan di rumah sebagai “tas siaga bencana”?", options: ["Buku gambar dan pensil warna", "Mainan kesukaan", "Obat-obatan, senter, makanan, dan air minum", "Pakaian pesta"], answer: "C", explanation: "Tas siaga bencana berisi barang-barang penting yang kita butuhkan untuk bertahan hidup saat evakuasi." },
+                { question: "Kalau gunung berapi meletus, ke mana kita harus pergi?", options: ["Mendekat ke gunung untuk melihat lebih jelas", "Pergi ke tempat pengungsian yang aman", "Tinggal di rumah sambil menonton TV", "Berlari ke sungai"], answer: "B", explanation: "Menjauhi area gunung berapi dan pergi ke tempat pengungsian adalah langkah penting untuk menghindari awan panas dan material berbahaya lainnya." },
+                { question: "Apa yang harus dilakukan sebelum bencana terjadi?", options: ["Bermain tanpa peduli", "Menyiapkan rencana dan belajar cara menyelamatkan diri", "Menunggu sampai bencana benar-benar datang", "Tidur saja di rumah"], answer: "B", explanation: "Persiapan sebelum bencana, seperti membuat rencana evakuasi, sangat penting untuk meningkatkan keselamatan kita." },
+                { question: "Saat ada gempa dan kamu sedang di sekolah, apa yang harus dilakukan?", options: ["Lari berdesakan keluar kelas", "Sembunyi di bawah meja lalu ikut arahan guru", "Berdiri di pintu sambil teriak", "Lari ke kamar mandi"], answer: "B", explanation: "Di sekolah, meja adalah pelindung pertama. Setelah gempa reda, ikuti arahan guru untuk evakuasi dengan tertib." },
+                { question: "Mengapa kita harus tetap tenang saat bencana?", options: ["Supaya bisa cepat tidur", "Agar bisa berpikir jernih dan selamat", "Karena bencana itu menyenangkan", "Supaya tidak dimarahi guru"], answer: "B", explanation: "Kepanikan bisa membuat kita sulit berpikir. Tetap tenang membantu kita mengambil keputusan yang tepat untuk keselamatan." },
+                { question: "Jika terjadi kebakaran di rumah, apa yang harus kita lakukan?", options: ["Bersembunyi di kamar tidur", "Keluar lewat pintu darurat atau jalan aman", "Menunggu api padam sendiri", "Bermain dengan api"], answer: "B", explanation: "Saat kebakaran, hal terpenting adalah segera keluar dari rumah melalui jalur evakuasi yang aman dan tidak kembali masuk." },
+                { question: "Apa tanda-tanda awal banjir yang harus diwaspadai?", options: ["Air sungai meluap dan hujan deras lama sekali", "Angin bertiup pelan", "Matahari sangat panas", "Awan berwarna putih cerah"], answer: "A", explanation: "Hujan deras yang tidak berhenti dan naiknya permukaan air sungai adalah tanda jelas bahwa banjir akan segera datang." },
+                { question: "Jika ada peringatan tsunami, apa yang harus kita lakukan?", options: ["Pergi ke pantai untuk melihat ombak besar", "Lari ke dataran tinggi atau tempat yang lebih aman", "Bermain pasir di tepi laut", "Diam saja di rumah"], answer: "B", explanation: "Tsunami adalah gelombang besar yang sangat berbahaya. Segera lari ke bukit atau gedung tinggi untuk menyelamatkan diri." },
+                { question: "Siapa yang biasanya memberi arahan saat terjadi bencana di sekolah?", options: ["Penjual jajanan", "Guru atau petugas keamanan sekolah", "Teman sebaya", "Anak kelas 1"], answer: "B", explanation: "Guru dan petugas sekolah sudah dilatih untuk memandu siswa ke tempat aman saat terjadi keadaan darurat." },
+                { question: "Apa sikap yang baik setelah bencana selesai?", options: ["Menolong orang lain yang membutuhkan", "Membiarkan orang lain kesusahan", "Marah-marah karena takut", "Tidak peduli dengan sekitar"], answer: "A", explanation: "Gotong royong dan saling membantu sesama korban bencana adalah sikap terpuji yang dapat meringankan beban bersama." }
+            ];
+
+            let currentQuestionIndex = 0;
+            let score = 0;
+
+            quizBtn.addEventListener('click', () => {
+                uiContainer.style.display = 'none';
+                nameInputContainer.style.display = 'flex';
+                nameInputField.focus();
+            });
+
+            submitNameBtn.addEventListener('click', () => {
+                const name = nameInputField.value.trim();
+                if (name) {
+                    userNameGlobal = name.charAt(0).toUpperCase() + name.slice(1);
+                    localStorage.setItem('siTangguhUserName', userNameGlobal);
+                    nameInputContainer.style.display = 'none';
+                    startQuiz();
+                } else {
+                    alert("Harap masukkan nama kamu!");
+                }
+            });
+
+            nameInputField.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter') {
+                    submitNameBtn.click();
+                }
+            });
+
+
+            function startQuiz() {
+                quizContainer.style.display = 'flex';
+                currentQuestionIndex = 0;
+                score = 0;
+                showQuestion();
+            }
+
+            function showQuestion() {
+                explanationContainer.style.display = 'none'; // Hide previous explanation
+                optionsContainer.innerHTML = '';
+                const currentQuestion = quizData[currentQuestionIndex];
+                questionText.textContent = `(${currentQuestionIndex + 1}/${quizData.length}) ${currentQuestion.question}`;
+
+                currentQuestion.options.forEach((option, index) => {
+                    const button = document.createElement('button');
+                    button.className = 'option-btn';
+                    const optionLetter = String.fromCharCode(65 + index); // A, B, C, D
+                    button.textContent = `${optionLetter}. ${option}`;
+                    button.dataset.answer = optionLetter;
+                    button.addEventListener('click', () => selectAnswer(button, currentQuestion));
+                    optionsContainer.appendChild(button);
+                });
+            }
+
+            function selectAnswer(selectedButton, currentQuestion) {
+                const selectedAnswer = selectedButton.dataset.answer;
+                const correctAnswer = currentQuestion.answer;
+                const allOptions = optionsContainer.querySelectorAll('.option-btn');
+
+                allOptions.forEach(btn => {
+                    btn.disabled = true; // Disable all buttons
+                    if (btn.dataset.answer === correctAnswer) {
+                        btn.classList.add('correct');
+                    } else if (btn === selectedButton) {
+                        btn.classList.add('incorrect');
+                    }
+                });
+
+                if (selectedAnswer === correctAnswer) {
+                    score++;
+                }
+
+                // Show explanation
+                explanationText.textContent = `Penjelasan: ${currentQuestion.explanation}`;
+                explanationContainer.style.display = 'block';
+
+                setTimeout(() => {
+                    currentQuestionIndex++;
+                    if (currentQuestionIndex < quizData.length) {
+                        showQuestion();
+                    } else {
+                        endQuiz();
+                    }
+                }, 4000); // Wait 4 seconds to allow reading explanation
+            }
+
+            function endQuiz() {
+                questionText.textContent = 'Kuis Selesai!';
+                let appreciationText = `Kerja bagus, ${userNameGlobal || 'Sobat Tangguh'}! Kamu sekarang jadi lebih tahu cara melindungi diri saat bencana. Hebat!`;
+                appreciationText += `<br><br>Skor Akhir Kamu: ${score} dari ${quizData.length}`;
+
+                optionsContainer.innerHTML = `<p id="score-text">${appreciationText}</p>`;
+                explanationContainer.style.display = 'none';
+                
+                const backButton = document.createElement('button');
+                backButton.textContent = 'Kembali ke Menu Utama';
+                backButton.className = 'menu-btn';
+                backButton.style.backgroundColor = '#008CBA';
+                backButton.style.border = 'none';
+                backButton.addEventListener('click', () => {
+                    quizContainer.style.display = 'none';
+                    uiContainer.style.display = 'flex';
+                });
+                optionsContainer.appendChild(backButton);
+            }
+        });
     </script>
 </head>
 <body style="margin : 0px; overflow: hidden;">
     
     <div id="ui-container">
-        <button id="start-btn">Mulai Bicara dengan Ros</button>
-        <div id="keyboard-input-container">
-            <input type="text" id="text-input" placeholder="Ketik nama atau pertanyaanmu...">
-            <button id="send-btn">Kirim</button>
+        <h1 id="ui-title">Si Tangguh</h1>
+        <p id="ui-subtitle">Asisten Cerdas Tanggap Bencana</p>
+        <div id="button-wrapper">
+            <button id="quiz-btn" class="menu-btn">Mulai Kuis</button>
+            <button id="start-vr-btn" class="menu-btn">Masuk VR</button>
+        </div>
+    </div>
+
+    <div id="name-input-container">
+        <h2 id="name-title">Siapa Nama Kamu?</h2>
+        <input type="text" id="name-input-field" placeholder="Ketik nama di sini...">
+        <button id="submit-name-btn" class="menu-btn">Lanjutkan</button>
+    </div>
+
+    <div id="quiz-container">
+        <div id="quiz-content">
+            <h2 id="question-text"></h2>
+            <div id="options-container"></div>
+            <div id="explanation-container">
+                <p id="explanation-text"></p>
+            </div>
         </div>
     </div>
 
@@ -287,22 +542,26 @@
             </a-cursor>
         </a-camera>
 
+        <a-assets>
+            <img id="sky" src="https://placehold.co/4096x2048/87CEEB/FFFFFF?text=Langit+Biru">
+        </a-assets>
+
+        <a-sky src="#sky"></a-sky>
         <a-light type="ambient" color="#AAA"></a-light>
         <a-light type="directional" intensity="0.5" position="-1 1 2"></a-light>
 
-        <!-- PERUBAHAN: Tombol restart mic dibuat lebih kecil dan dipindah agar tidak mengganggu -->
         <a-entity id="mic-restart-btn"
-                  geometry="primitive: sphere; radius: 0.1"
-                  material="color: #E74C3C; opacity: 0.8"
-                  position="0 0.2 -2"
-                  class="clickable"
-                  animation__scale="property: scale; to: 1.2 1.2 1.2; dir: alternate; loop: true; dur: 1000; startEvents: mouseenter"
-                  animation__scale_reverse="property: scale; to: 1 1 1; dur: 500; startEvents: mouseleave">
+                    geometry="primitive: sphere; radius: 0.1"
+                    material="color: #E74C3C; opacity: 0.8"
+                    position="0 0.2 -2"
+                    class="clickable"
+                    animation__scale="property: scale; to: 1.2 1.2 1.2; dir: alternate; loop: true; dur: 1000; startEvents: mouseenter"
+                    animation__scale_reverse="property: scale; to: 1 1 1; dur: 500; startEvents: mouseleave">
             <a-text value="Mic" align="center" position="0 0.2 0" width="1.5"></a-text>
         </a-entity>
 
         <a-entity id="robot" position="0 0.7 -3" rotation="0 0 0">
-            <a-text value="Ros" color="#333" position="0 2.1 0" align="center" width="5"></a-text>
+            <a-text value="Si Tangguh" color="#333" position="0 2.1 0" align="center" width="5"></a-text>
             <a-entity id="speech-bubble" position="0 2.5 0" visible="false">
                 <a-plane color="#FFFFFF" width="2.5" height="1" rounded="0.2" position="0 0 -0.01"></a-plane>
                 <a-triangle color="#FFFFFF" vertex-a="0 -0.5 0" vertex-b="-0.2 -0.7 0" vertex-c="0.2 -0.7 0"></a-triangle>
