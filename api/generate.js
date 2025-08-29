@@ -1,5 +1,5 @@
 // File: /api/generate.js
-// VERSI PERBAIKAN: Menambahkan logika untuk menjawab pertanyaan umum
+// VERSI GEMMA: Menggunakan model Gemma yang gratis.
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -17,56 +17,73 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Question is required' });
     }
 
-    const modelId = "gemini-1.5-flash-latest";
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+    // --- PERUBAHAN 1: Mengganti Model ID ke Gemma ---
+    // Anda bisa coba model lain seperti "gemma-7b-it" jika diperlukan
+    const modelId = "gemma-2b-it"; 
+    const generateContentApi = "generateContent"; // Tetap menggunakan generateContent untuk Vercel
 
-    const knowledgeBase = `
-        Pertanyaan,Jawaban
-        Apa itu bencana alam?,"Bencana alam adalah kejadian besar dari alam yang bisa merusak lingkungan dan membahayakan orang, seperti gempa, banjir, atau gunung meletus."
-        Apa itu mitigasi bencana?,Mitigasi bencana adalah usaha untuk mengurangi risiko bahaya sebelum bencana terjadi.
-        Kenapa kita harus belajar tentang bencana?,Supaya kita tahu cara melindungi diri dan membantu orang lain.
-        Apa yang harus dilakukan saat gempa bumi?,"Segera lindungi kepala, bersembunyi di bawah meja, dan jangan panik."
-        "Kalau ada banjir, apa yang harus kita lakukan?","Pindah ke tempat yang lebih tinggi dan aman, jangan main di air banjir."
-        Bagaimana tanda-tanda gunung akan meletus?,"Ada getaran, suara gemuruh, dan asap keluar dari puncak gunung."
-        Apa itu evakuasi?,Evakuasi adalah pindah ke tempat aman saat ada bahaya.
-        "Kalau ada sirine peringatan, artinya apa?","Itu tanda ada bahaya, kita harus segera mengikuti petunjuk."
-        Apa yang harus dibawa saat mengungsi?,"Bawa barang penting seperti air minum, makanan, obat, dan pakaian secukupnya."
-        "Kalau ada kebakaran, apa yang harus dilakukan?","Segera keluar dari bangunan, tutup hidung dan mulut dengan kain basah."
-        Apa itu tas siaga bencana?,Tas berisi barang penting yang siap dibawa saat bencana.
-        Bagaimana cara aman keluar saat gempa di sekolah?,"Ikuti guru, jangan berlari, dan jaga jarak dari bangunan."
-        Apa yang tidak boleh dilakukan saat banjir?,"Jangan bermain di air banjir, jangan mendekati tiang listrik."
-        Bagaimana cara membantu teman saat bencana?,Ajak dia ke tempat aman dan beri semangat.
-        Mengapa kita tidak boleh panik?,Karena panik membuat kita sulit berpikir dan bertindak dengan benar.
-        Apa itu jalur evakuasi?,Jalan atau rute yang harus dilalui untuk menuju tempat aman.
-        Bagaimana cara tahu informasi bencana?,"Dengar dari guru, orang tua, radio, atau sirine."
-        Apa itu gempa bumi?,Getaran di permukaan bumi karena pergerakan lempeng bumi.
-        "Kalau kita terpisah dari orang tua saat bencana, apa yang harus dilakukan?",Pergi ke posko atau tempat berkumpul yang aman.
-        Mengapa kita harus latihan simulasi bencana?,Supaya kita siap dan tahu apa yang harus dilakukan jika bencana terjadi.
-    `;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:${generateContentApi}?key=${apiKey}`;
 
-    // --- PERUBAHAN UTAMA: Mengganti nama robot menjadi Si Tangguh ---
-    const fullPrompt = `
-        Kamu adalah Si Tangguh, robot asisten yang ramah untuk anak-anak SD.
-        Tugasmu adalah menjawab pertanyaan tentang kesiapsiagaan bencana HANYA BERDASARKAN data CSV berikut.
-        
-        DATA PENGETAHUAN:
-        ---
-        ${knowledgeBase}
-        ---
+    // Basis pengetahuan dalam format CSV
+    const knowledgeBaseCSV = `Pertanyaan,Jawaban
+Apa itu bencana alam?,"Bencana alam adalah kejadian besar dari alam yang bisa merusak lingkungan dan membahayakan orang, seperti gempa, banjir, atau gunung meletus."
+Apa itu mitigasi bencana?,Mitigasi bencana adalah usaha untuk mengurangi risiko bahaya sebelum bencana terjadi.
+Kenapa kita harus belajar tentang bencana?,Supaya kita tahu cara melindungi diri dan membantu orang lain.
+Apa yang harus dilakukan saat gempa bumi?,"Segera lindungi kepala, bersembunyi di bawah meja, dan jangan panik."
+"Kalau ada banjir, apa yang harus kita lakukan?","Pindah ke tempat yang lebih tinggi dan aman, jangan main di air banjir."
+Bagaimana tanda-tanda gunung akan meletus?,"Ada getaran, suara gemuruh, dan asap keluar dari puncak gunung."
+Apa itu evakuasi?,Evakuasi adalah pindah ke tempat aman saat ada bahaya.
+"Kalau ada sirine peringatan, artinya apa?","Itu tanda ada bahaya, kita harus segera mengikuti petunjuk."
+Apa yang harus dibawa saat mengungsi?,"Bawa barang penting seperti air minum, makanan, obat, dan pakaian secukupnya."
+"Kalau ada kebakaran, apa yang harus dilakukan?","Segera keluar dari bangunan, tutup hidung dan mulut dengan kain basah."
+Apa itu tas siaga bencana?,Tas berisi barang penting yang siap dibawa saat bencana.
+Bagaimana cara aman keluar saat gempa di sekolah?,"Ikuti guru, jangan berlari, dan jaga jarak dari bangunan."
+Apa yang tidak boleh dilakukan saat banjir?,"Jangan bermain di air banjir, jangan mendekati tiang listrik."
+Bagaimana cara membantu teman saat bencana?,Ajak dia ke tempat aman dan beri semangat.
+Mengapa kita tidak boleh panik?,Karena panik membuat kita sulit berpikir dan bertindak dengan benar.
+Apa itu jalur evakuasi?,Jalan atau rute yang harus dilalui untuk menuju tempat aman.
+Bagaimana cara tahu informasi bencana?,"Dengar dari guru, orang tua, radio, atau sirine."
+Apa itu gempa bumi?,Getaran di permukaan bumi karena pergerakan lempeng bumi.
+"Kalau kita terpisah dari orang tua saat bencana, apa yang harus dilakukan?",Pergi ke posko atau tempat berkumpul yang aman.
+Mengapa kita harus latihan simulasi bencana?,Supaya kita siap dan tahu apa yang harus dilakukan jika bencana terjadi.`;
 
-        Aturan:
-        1. Jawabanmu harus singkat, jelas, dan sesuai dengan data di atas.
-        2. Jangan menambah informasi di luar data tersebut.
-        3. Jika pertanyaannya bersifat umum seperti 'apa yang kamu tahu?' atau 'jelaskan semua yang kamu tahu', jawab dengan merangkum topik-topik utama dari DATA PENGETAHUAN. Contoh jawaban: 'Tentu! Si Tangguh tahu banyak tentang persiapan bencana, seperti apa itu gempa bumi dan banjir, apa yang harus dilakukan saat evakuasi, dan barang apa saja yang perlu ada di tas siaga bencana. Kamu mau tanya tentang yang mana?'
-        4. Jika pertanyaan tidak bisa dijawab dari data, katakan dengan sopan: "Hmm, Si Tangguh belum belajar tentang itu. Coba tanya yang lain ya!"
-        
-        Jawab pertanyaan berikut: "${question}"
-    `;
+    // Mengubah CSV menjadi Base64
+    const knowledgeBaseBase64 = Buffer.from(knowledgeBaseCSV).toString('base64');
 
+    // --- PERUBAHAN 2: Menyesuaikan Body Request sesuai format Gemma ---
     const requestBody = {
-        contents: [{
-            parts: [{ text: fullPrompt }]
-        }]
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {
+                        "inlineData": {
+                            "mimeType": "text/csv",
+                            "data": knowledgeBaseBase64
+                        }
+                    },
+                    {
+                        "text": "Kamu adalah Si Tangguh, robot asisten interaktif yang ramah untuk anak-anak SD. \nTugasmu menjawab pertanyaan tentang bencana alam berdasarkan data yang diberikan. \nGunakan bahasa sederhana, jelas, dan menyenangkan. \nJika pertanyaan tidak terkait bencana, katakan dengan sopan bahwa kamu hanya bisa menjawab tentang bencana. \nAjak anak-anak untuk ikut berpikir, misalnya dengan memberi pertanyaan balik sederhana.\n"
+                    },
+                ]
+            },
+            {
+                "role": "model",
+                "parts": [
+                    {
+                        "text": "Oke, siap! Aku Si Tangguh, robot asisten yang siap membantumu belajar tentang bencana alam. \n\nAyo, mau tanya apa? Jangan ragu-ragu ya! 😊"
+                    },
+                ]
+            },
+            {
+                "role": "user",
+                "parts": [
+                    {
+                        "text": question // Pertanyaan dari pengguna disisipkan di sini
+                    },
+                ]
+            },
+        ],
     };
 
     try {
@@ -78,7 +95,7 @@ export default async function handler(req, res) {
 
         if (!response.ok) {
             const errorBody = await response.json();
-            console.error('Gemini API Error:', errorBody);
+            console.error('API Error:', errorBody);
             throw new Error(`API request failed with status ${response.status}`);
         }
 
@@ -88,16 +105,17 @@ export default async function handler(req, res) {
             const answerText = result.candidates[0].content.parts[0].text;
             res.status(200).json({ answer: answerText });
         } else {
-            console.error('Unexpected Gemini API response structure:', result);
+            console.error('Unexpected API response structure:', result);
             if (result.promptFeedback) {
                  console.error('Prompt Feedback:', result.promptFeedback);
                  return res.status(500).json({ error: 'Jawaban diblokir karena alasan keamanan.' });
             }
-            res.status(500).json({ error: 'Failed to parse response from Gemini API' });
+            res.status(500).json({ error: 'Failed to parse response from API' });
         }
 
     } catch (error) {
-        console.error('Error calling Gemini API:', error);
+        console.error('Error calling API:', error);
         res.status(500).json({ error: 'An error occurred while fetching the answer.' });
     }
 }
+
