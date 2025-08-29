@@ -12,6 +12,7 @@
         body {
             font-family: 'Poppins', sans-serif;
             font-weight: bold;
+            background-color: #eaf8ff;
         }
         /* Styles for the UI overlay (Duolingo Style) */
         .ui-screen {
@@ -26,9 +27,7 @@
             align-items: center;
             z-index: 10;
             text-align: center;
-            background: linear-gradient(135deg, #eaf8ff, #d7efff, #eaf8ff);
-            background-size: 200% 200%;
-            animation: gradient-animation 10s ease infinite;
+            background-color: #eaf8ff;
             gap: 20px;
             padding: 20px;
             box-sizing: border-box;
@@ -37,12 +36,6 @@
         .ui-screen.hidden {
             opacity: 0;
             visibility: hidden;
-        }
-
-        @keyframes gradient-animation {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
         }
 
         /* Hide A-Frame's default VR button until we're ready */
@@ -73,6 +66,9 @@
             bottom: 8px;
             background-color: #87CEEB;
             border-radius: 8px;
+            animation: gradient-bg 10s ease infinite;
+            background: linear-gradient(-45deg, #eaf8ff, #d1f0ff, #87CEEB);
+            background-size: 400% 400%;
         }
         #duo-mascot::after { /* Eyes */
             content: '';
@@ -86,12 +82,17 @@
             box-shadow: 45px 0 0 #2C3E50;
             animation: blink 4s infinite;
         }
-
+        
         @keyframes blink {
-            0%, 95%, 100% { transform: scaleY(1); }
-            97.5% { transform: scaleY(0.1); }
+            0%, 90%, 100% { transform: scaleY(1); }
+            95% { transform: scaleY(0.1); }
         }
 
+        @keyframes gradient-bg {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
 
         #ui-title, #name-title, #vr-tutorial-title {
             font-family: 'Bungee', cursive;
@@ -127,7 +128,7 @@
         }
         #button-wrapper {
             display: flex;
-            flex-direction: column; /* Stacked */
+            flex-direction: column;
             gap: 15px;
             margin-top: 20px;
             width: 90%;
@@ -150,13 +151,13 @@
         }
 
         #quiz-btn {
-            background-color: #58a700; /* Duolingo Green */
+            background-color: #58a700;
             border-bottom: 4px solid #4a8d00;
         }
         #quiz-btn:hover { background-color: #62b800; }
 
         #start-vr-btn {
-            background-color: #1cb0f6; /* Duolingo Blue */
+            background-color: #1cb0f6;
             border-bottom: 4px solid #1899d6;
         }
         #start-vr-btn:hover { background-color: #2cc1ff; }
@@ -198,7 +199,7 @@
         #progress-bar {
             width: 0%;
             height: 100%;
-            background-color: #58a700; /* Duolingo green */
+            background-color: #58a700;
             transition: width 0.3s ease-in-out;
         }
 
@@ -212,8 +213,21 @@
             max-width: 600px;
             margin: 0 auto;
             box-sizing: border-box;
-            position: relative; /* For popup positioning */
         }
+
+        #feedback-indicator {
+            display: none;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            font-size: 1.2em;
+            font-weight: 700;
+            color: white;
+            animation: fadeIn 0.3s;
+        }
+        .feedback-correct { background-color: #58a700; }
+        .feedback-incorrect { background-color: #ff4b4b; }
+
         #question-text {
             font-size: 24px;
             font-weight: 700;
@@ -255,15 +269,15 @@
             border-color: #ff4b4b !important;
             color: #ff4b4b !important;
         }
-        #feedback-container {
-            padding: 20px;
-            margin-top: auto;
+        #quiz-footer {
+            min-height: 110px;
+            padding: 20px 0;
             border-top: 2px solid #e5e5e5;
-            background: white;
-            border-radius: 0 0 12px 12px;
+            margin-top: auto;
         }
         #explanation-container {
             display: none;
+            animation: fadeIn 0.3s;
         }
         #explanation-text {
             margin: 0;
@@ -280,44 +294,14 @@
             font-size: 18px;
             font-weight: 700;
             color: white;
-            background-color: #58a700;
+            background-color: #1cb0f6;
             border: none;
-            border-bottom: 4px solid #4a8d00;
+            border-bottom: 4px solid #1899d6;
             border-radius: 12px;
             cursor: pointer;
             margin-top: 20px;
+            animation: fadeIn 0.3s;
         }
-
-        #answer-feedback-popup {
-            position: absolute;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.5);
-            padding: 20px 40px;
-            border-radius: 20px;
-            font-size: 4em;
-            font-family: 'Bungee', cursive;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events: none;
-        }
-        #answer-feedback-popup.show {
-            transform: translate(-50%, -50%) scale(1);
-            opacity: 1;
-            visibility: visible;
-        }
-        #answer-feedback-popup.correct {
-            background-color: rgba(88, 167, 0, 0.85);
-            color: white;
-            text-shadow: 2px 2px #4a8d00;
-        }
-        #answer-feedback-popup.incorrect {
-            background-color: rgba(255, 75, 75, 0.85);
-            color: white;
-            text-shadow: 2px 2px #c40000;
-        }
-
         #score-text {
             font-size: 20px;
             margin-bottom: 20px;
@@ -326,7 +310,6 @@
             text-align: center;
             font-weight: 400;
         }
-        /* Badge Styles */
         #badge-container {
             margin-bottom: 15px;
             display: flex;
@@ -336,8 +319,8 @@
             animation: fadeIn 0.5s ease-in-out;
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.8); }
-            to { opacity: 1; transform: scale(1); }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
         .trophy-svg {
             width: 90px;
@@ -355,12 +338,81 @@
             font-weight: 400;
         }
 
+        /* --- Responsive Styles --- */
+        @media (max-width: 600px) {
+            #ui-title, #name-title, #vr-tutorial-title {
+                font-size: 2.2em;
+            }
+            #ui-subtitle, #vr-tutorial-text {
+                font-size: 1em;
+            }
+            .menu-btn, #name-input-field, .option-btn, #next-question-btn {
+                font-size: 16px;
+                padding: 12px;
+            }
+            #question-text {
+                font-size: 20px;
+            }
+            #score-text {
+                font-size: 18px;
+            }
+            #badge-title {
+                font-size: 22px;
+            }
+        }
     </style>
     <script>
+        // Sound effects
+        let correctSound, incorrectSound;
+
+        // Simple audio context starter
+        function initAudio() {
+            if (correctSound) return; // a-frame already unlocked it
+             try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const audioCtx = new AudioContext();
+
+                // Create correct sound
+                const oscillatorCorrect = audioCtx.createOscillator();
+                const gainCorrect = audioCtx.createGain();
+                oscillatorCorrect.connect(gainCorrect);
+                gainCorrect.connect(audioCtx.destination);
+                oscillatorCorrect.type = 'sine';
+                oscillatorCorrect.frequency.value = 600;
+                gainCorrect.gain.value = 0;
+                oscillatorCorrect.start();
+                correctSound = { osc: oscillatorCorrect, gain: gainCorrect, ctx: audioCtx };
+
+                // Create incorrect sound
+                const oscillatorIncorrect = audioCtx.createOscillator();
+                const gainIncorrect = audioCtx.createGain();
+                oscillatorIncorrect.connect(gainIncorrect);
+                gainIncorrect.connect(audioCtx.destination);
+                oscillatorIncorrect.type = 'square';
+                oscillatorIncorrect.frequency.value = 200;
+                gainIncorrect.gain.value = 0;
+                oscillatorIncorrect.start();
+                incorrectSound = { osc: oscillatorIncorrect, gain: gainIncorrect, ctx: audioCtx };
+
+            } catch (e) {
+                console.error("Web Audio API is not supported in this browser");
+            }
+        }
+        
+        function playSound(sound) {
+            if (!sound) return;
+            const now = sound.ctx.currentTime;
+            sound.gain.cancelScheduledValues(now);
+            sound.gain.setValueAtTime(sound.gain.value, now);
+            sound.gain.linearRampToValueAtTime(0.3, now + 0.01);
+            sound.gain.linearRampToValueAtTime(0, now + 0.2);
+        }
+
         let userNameGlobal = '';
 
         AFRAME.registerComponent('voice-listener', {
             init: function() {
+                initAudio(); // Also init audio from here
                 this.answerTextEl = document.querySelector('#answer-text');
                 this.speechBubbleEl = document.querySelector('#speech-bubble');
                 this.robotHeadEl = document.querySelector('#robot-head');
@@ -438,7 +490,7 @@
                 if (this.recognition && this.isListening) {
                     this.recognition.stop();
                 }
-                this.speechSynthesis.cancel(); // Stop any ongoing speech
+                this.speechSynthesis.cancel();
                 this.speechBubbleEl.setAttribute('visible', 'false');
                 this.conversationState = 'IDLE';
             },
@@ -513,7 +565,7 @@
                     userName = userName.charAt(0).toUpperCase() + userName.slice(1);
                     userNameGlobal = userName;
                     localStorage.setItem('siTangguhUserName', userNameGlobal);
-                    const greetingText = `Halo, ${userNameGlobal}! Senang bertemu denganmu. Langsung saja tanyakan apa saja tentang bencana alam.`;
+                    const greetingText = `Halo, ${userNameGlobal}! Senang bertemu denganmu. Tanyakan apa saja tentang bencana alam.`;
                     this.conversationState = 'QNA';
                     this.giveAnswer(greetingText, () => { this.canListen = true; this.startListening(); });
                 } else if (this.conversationState === 'QNA') {
@@ -524,11 +576,11 @@
             handleIntroduction: function() {
                 if (userNameGlobal) {
                     this.conversationState = 'QNA';
-                    const greetingText = `Halo, ${userNameGlobal}! Senang bertemu denganmu. Langsung saja tanyakan apa saja tentang bencana alam.`;
+                    const greetingText = `Halo, ${userNameGlobal}! Senang bertemu lagi. Mau tanya apa sekarang?`;
                     this.giveAnswer(greetingText, () => { this.canListen = true; this.startListening(); });
                 } else {
                     this.conversationState = 'INTRODUCTION';
-                    const introText = "Halo, namaku Si Tangguh. Aku robot asisten untuk membantumu memahami bencana.";
+                    const introText = "Halo, namaku Si Tangguh. Aku siap membantumu belajar tentang bencana.";
                     this.giveAnswer(introText, () => {
                         const askNameText = "Kalau boleh tahu, nama kamu siapa?";
                         this.giveAnswer(askNameText, () => { this.conversationState = 'WAITING_FOR_NAME'; this.canListen = true; this.startListening(); });
@@ -555,33 +607,6 @@
             const backToMenuVrBtn = document.getElementById('back-to-menu-vr-btn');
             const progressBar = document.getElementById('progress-bar');
             
-            let audioCtx;
-            function playSound(isCorrect) {
-                if (!audioCtx) {
-                    try {
-                        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    } catch (e) {
-                        console.warn("Web Audio API is not supported in this browser");
-                        return;
-                    }
-                }
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-
-                const frequency = isCorrect ? 600 : 200;
-                const type = isCorrect ? 'sine' : 'square';
-                
-                oscillator.type = type;
-                oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                
-                oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.15);
-            }
-
             if (sceneEl.hasLoaded) {
                 sceneEl.pause();
             } else {
@@ -613,7 +638,6 @@
                 if (sceneEl.components['voice-listener']) {
                     sceneEl.components['voice-listener'].stopExperience();
                 }
-                // Directly show the UI container without a hiding element
                 uiContainer.classList.remove('hidden');
                 document.body.classList.remove('vr-ready');
             });
@@ -640,7 +664,10 @@
             let currentQuestionIndex = 0;
             let score = 0;
 
-            quizBtn.addEventListener('click', () => transitionTo(uiContainer, nameInputContainer));
+            quizBtn.addEventListener('click', () => {
+                initAudio();
+                transitionTo(uiContainer, nameInputContainer);
+            });
 
             submitNameBtn.addEventListener('click', () => {
                 const name = nameInputField.value.trim();
@@ -671,16 +698,16 @@
 
             function showQuestion() {
                 quizContent.innerHTML = `
-                    <div id="answer-feedback-popup"></div>
+                    <div id="feedback-indicator"></div>
                     <div>
                         <h2 id="question-text"></h2>
                         <div id="options-container"></div>
                     </div>
-                    <div id="feedback-container" style="visibility: hidden;">
-                        <div id="explanation-container" style="display:none;">
+                    <div id="quiz-footer">
+                        <div id="explanation-container">
                             <p id="explanation-text"></p>
                         </div>
-                        <button id="next-question-btn" style="display:none;">Lanjutkan</button>
+                        <button id="next-question-btn">Lanjutkan</button>
                     </div>`;
 
                 document.getElementById('next-question-btn').addEventListener('click', () => {
@@ -693,6 +720,7 @@
                 const currentQuestion = quizData[currentQuestionIndex];
                 document.getElementById('question-text').textContent = currentQuestion.question;
                 const optionsContainer = document.getElementById('options-container');
+                document.getElementById('feedback-indicator').style.display = 'none';
 
                 currentQuestion.options.forEach((option, index) => {
                     const button = document.createElement('button');
@@ -709,35 +737,34 @@
             }
 
             function selectAnswer(selectedButton, currentQuestion) {
-                const isCorrect = selectedButton.dataset.answer === currentQuestion.answer;
+                const selectedAnswer = selectedButton.dataset.answer;
+                const correctAnswer = currentQuestion.answer;
                 const allOptions = document.querySelectorAll('#options-container .option-btn');
-                const feedbackPopup = document.getElementById('answer-feedback-popup');
-
+                const feedbackIndicator = document.getElementById('feedback-indicator');
+                
                 allOptions.forEach(btn => {
                     btn.disabled = true;
-                    if (btn.dataset.answer === currentQuestion.answer) btn.classList.add('correct');
+                    if (btn.dataset.answer === correctAnswer) btn.classList.add('correct');
                     else if (btn === selectedButton) btn.classList.add('incorrect');
                 });
                 
-                playSound(isCorrect);
-                feedbackPopup.textContent = isCorrect ? 'BENAR!' : 'COBA LAGI!';
-                feedbackPopup.className = isCorrect ? 'correct' : 'incorrect';
-                feedbackPopup.classList.add('show');
-                
-                setTimeout(() => {
-                    const explanationTextEl = document.getElementById('explanation-text');
-                    explanationTextEl.textContent = `Penjelasan: ${currentQuestion.explanation}`;
-                    document.getElementById('explanation-container').style.display = 'block';
-                    document.getElementById('next-question-btn').style.display = 'block';
-                    document.getElementById('feedback-container').style.visibility = 'visible';
+                feedbackIndicator.style.display = 'block';
 
-                    if (isCorrect) {
-                        score++;
-                        explanationTextEl.className = 'correct';
-                    } else {
-                        explanationTextEl.className = 'incorrect';
-                    }
-                }, 800);
+                const explanationTextEl = document.getElementById('explanation-text');
+                explanationTextEl.textContent = `Penjelasan: ${currentQuestion.explanation}`;
+                document.getElementById('explanation-container').style.display = 'block';
+                document.getElementById('next-question-btn').style.display = 'block';
+
+                if (selectedAnswer === correctAnswer) {
+                    score++;
+                    feedbackIndicator.textContent = "BENAR";
+                    feedbackIndicator.className = "feedback-correct";
+                    playSound(correctSound);
+                } else {
+                    feedbackIndicator.textContent = "SALAH";
+                    feedbackIndicator.className = "feedback-incorrect";
+                    playSound(incorrectSound);
+                }
             }
 
             function endQuiz() {
@@ -898,14 +925,12 @@
                 </a-box>
             </a-entity>
             <a-box id="robot-body" position="0 0.5 0" width="0.6" height="0.8" depth="0.6" color="#FFFFFF" shadow></a-box>
-            <!-- Nameplate di dada robot -->
             <a-entity id="nameplate" position="0 0.6 0.31">
                 <a-plane width="0.5" height="0.3" color="#002D62" rounded="0.05"></a-plane>
                 <a-text value="SI\nTANGGUH" color="#FFFFFF" align="center" width="1.5" font="kelsonsans" line-height="70" position="0 0 0.01"></a-text>
             </a-entity>
             <a-cylinder position="-0.4 0.6 0" radius="0.1" height="0.4" color="#FFFFFF" rotation="0 0 30" shadow></a-cylinder>
             <a-cylinder position="0.4 0.6 0" radius="0.1" height="0.4" color="#FFFFFF" rotation="0 0 -30" shadow></a-cylinder>
-            <!-- Kaki Merah -->
             <a-cylinder position="-0.15 0 0" radius="0.15" height="0.2" color="#D9262D" shadow></a-cylinder>
             <a-cylinder position="0.15 0 0" radius="0.15" height="0.2" color="#D9262D" shadow></a-cylinder>
         </a-entity>
