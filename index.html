@@ -5,9 +5,12 @@
     <meta name="description" content="An interactive VR disaster preparedness assistant robot named Si Tangguh, powered by Generative AI, with an integrated quiz.">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Poppins:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Poppins', sans-serif;
             font-weight: bold;
         }
         /* Styles for the UI overlay (Duolingo Style) */
@@ -75,10 +78,12 @@
 
 
         #ui-title, #name-title, #vr-tutorial-title {
-            font-size: 2.5em;
+            font-family: 'Bungee', cursive;
+            font-size: 2.8em;
             color: #3C3C3C;
             text-shadow: none;
             margin: 0;
+            font-weight: 400;
         }
         #ui-subtitle, #vr-tutorial-text {
             font-size: 1.2em;
@@ -87,9 +92,11 @@
             margin-top: -15px;
             max-width: 500px;
             line-height: 1.5;
+            font-weight: 400;
         }
         #vr-tutorial-text strong {
             color: #3C3C3C;
+            font-weight: 700;
         }
         #name-input-field {
             padding: 15px;
@@ -100,6 +107,7 @@
             width: 90%;
             max-width: 350px;
             text-align: center;
+            font-family: 'Poppins', sans-serif;
         }
         #button-wrapper {
             display: flex;
@@ -117,8 +125,9 @@
             color: white;
             transition: all 0.2s ease;
             text-transform: uppercase;
-            font-weight: bold;
+            font-weight: 700;
             border: none;
+            font-family: 'Poppins', sans-serif;
         }
         .menu-btn:hover {
             transform: translateY(-2px);
@@ -169,6 +178,7 @@
             background: none;
             border: none;
             color: #aaa;
+            font-family: 'Poppins', sans-serif;
         }
         #progress-bar-container {
             flex-grow: 1;
@@ -197,7 +207,7 @@
         }
         #question-text {
             font-size: 24px;
-            font-weight: bold;
+            font-weight: 700;
             margin-bottom: 20px;
             color: #333;
         }
@@ -209,7 +219,7 @@
         .option-btn {
             padding: 15px;
             font-size: 18px;
-            font-weight: bold;
+            font-weight: 400;
             border: 2px solid #e5e5e5;
             border-bottom-width: 4px;
             border-radius: 12px;
@@ -218,6 +228,10 @@
             text-align: left;
             transition: background-color 0.2s;
             color: #444;
+            font-family: 'Poppins', sans-serif;
+        }
+        .option-btn strong {
+            font-weight: 700;
         }
         .option-btn:hover:not([disabled]) {
             background-color: #f7f7f7;
@@ -243,7 +257,7 @@
         #explanation-text {
             margin: 0;
             font-size: 16px;
-            font-weight: bold;
+            font-weight: 400;
         }
         #explanation-text.correct { color: #58a700; }
         #explanation-text.incorrect { color: #ff4b4b; }
@@ -253,7 +267,7 @@
             width: 100%;
             padding: 15px;
             font-size: 18px;
-            font-weight: bold;
+            font-weight: 700;
             color: white;
             background-color: #58a700;
             border: none;
@@ -268,6 +282,7 @@
             color: #555;
             line-height: 1.5;
             text-align: center;
+            font-weight: 400;
         }
         /* Badge Styles */
         #badge-container {
@@ -291,10 +306,11 @@
         .trophy-svg .bronze { fill: url(#bronze-gradient); }
 
         #badge-title {
-            font-size: 24px;
-            font-weight: bold;
+            font-family: 'Bungee', cursive;
+            font-size: 26px;
             margin-top: 10px;
             color: #3C3C3C;
+            font-weight: 400;
         }
 
     </style>
@@ -781,7 +797,7 @@
                     class="clickable"
                     animation__scale="property: scale; to: 1.2 1.2 1.2; dir: alternate; loop: true; dur: 1000; startEvents: mouseenter"
                     animation__scale_reverse="property: scale; to: 1 1 1; dur: 500; startEvents: mouseleave">
-            <a-text value="Mic" align="center" position="0 0.2 0" width="1.5"></a-text>
+            <a-text value="Mic" align="center" position="0 0.2 0" width="1.5" font="kelsonsans"></a-text>
         </a-entity>
 
         <a-entity id="back-to-menu-vr-btn"
@@ -791,15 +807,15 @@
             class="clickable"
             animation__scale="property: scale; to: 1.1 1.1 1.1; dir: alternate; loop: true; dur: 1000; startEvents: mouseenter"
             animation__scale_reverse="property: scale; to: 1 1 1; dur: 500; startEvents: mouseleave">
-            <a-text value="Kembali ke Menu" align="center" width="2"></a-text>
+            <a-text value="Kembali ke Menu" align="center" width="2" font="kelsonsans"></a-text>
         </a-entity>
 
         <a-entity id="robot" position="0 0.7 -3" rotation="0 0 0">
-            <a-text value="Si Tangguh" color="#333" position="0 2.1 0" align="center" width="5"></a-text>
+            <!-- Text di atas kepala dihilangkan dari sini -->
             <a-entity id="speech-bubble" position="0 2.5 0" visible="false">
                 <a-plane color="#FFFFFF" width="2.5" height="1" rounded="0.2" position="0 0 -0.01"></a-plane>
                 <a-triangle color="#FFFFFF" vertex-a="0 -0.5 0" vertex-b="-0.2 -0.7 0" vertex-c="0.2 -0.7 0"></a-triangle>
-                <a-text id="answer-text" value="" color="#00008B" width="2.3" align="center" wrap-count="35"></a-text>
+                <a-text id="answer-text" value="" color="#00008B" width="2.3" align="center" wrap-count="35" font="kelsonsans"></a-text>
             </a-entity>
             <a-entity id="robot-head" position="0 1.2 0">
                 <a-box position="0 0 0" width="0.9" height="0.8" depth="0.8" color="#FFFFFF" shadow>
@@ -815,6 +831,11 @@
                 </a-entity>
             </a-entity>
             <a-box id="robot-body" position="0 0.5 0" width="0.6" height="0.8" depth="0.6" color="#BDC3C7" shadow></a-box>
+            <!-- Nameplate di dada robot -->
+            <a-entity id="nameplate" position="0 0.6 0.31">
+                <a-plane width="0.5" height="0.3" color="#002D62" rounded="0.05"></a-plane>
+                <a-text value="SI\nTANGGUH" color="#FFFFFF" align="center" width="1.5" font="kelsonsans" line-height="70" position="0 0 0.01"></a-text>
+            </a-entity>
             <a-cylinder position="-0.4 0.6 0" radius="0.1" height="0.4" color="#FFFFFF" rotation="0 0 30" shadow></a-cylinder>
             <a-cylinder position="0.4 0.6 0" radius="0.1" height="0.4" color="#FFFFFF" rotation="0 0 -30" shadow></a-cylinder>
             <a-cylinder position="-0.15 0 0" radius="0.15" height="0.2" color="#FFFFFF" shadow></a-cylinder>
