@@ -36,6 +36,10 @@
         .a-enter-vr {
             display: none !important;
         }
+        /* Show the VR button only when the body has the 'vr-ready' class */
+        body.vr-ready .a-enter-vr {
+            display: block !important;
+        }
 
         #duo-mascot {
             width: 120px;
@@ -491,8 +495,7 @@
             const quizContent = document.getElementById('quiz-content');
             const backToMenuBtn = document.getElementById('back-to-menu-btn');
             const backToMenuVrBtn = document.getElementById('back-to-menu-vr-btn');
-            const enterVrUi = document.querySelector('.a-enter-vr');
-
+            
             if (sceneEl.hasLoaded) {
                 sceneEl.pause();
             } else {
@@ -506,7 +509,7 @@
 
             startVrExperienceBtn.addEventListener('click', () => {
                 vrTutorialContainer.style.display = 'none';
-                if(enterVrUi) enterVrUi.style.display = 'block !important';
+                document.body.classList.add('vr-ready');
                 sceneEl.play();
                 if (sceneEl.components['voice-listener']) {
                     sceneEl.components['voice-listener'].startExperience();
@@ -522,7 +525,7 @@
                     sceneEl.components['voice-listener'].stopExperience();
                 }
                 uiContainer.style.display = 'flex';
-                if(enterVrUi) enterVrUi.style.display = 'none !important';
+                document.body.classList.remove('vr-ready');
             });
 
 
