@@ -19,7 +19,7 @@ export default async function handler(req, res) {
 
     // --- PERUBAHAN 1: Mengganti Model ID ke Gemma ---
     // Anda bisa coba model lain seperti "gemma-7b-it" jika diperlukan
-    const modelId = "gemma-2b-it"; 
+    const modelId = "gemma-3-1b-it"; 
     const generateContentApi = "generateContent"; // Tetap menggunakan generateContent untuk Vercel
 
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:${generateContentApi}?key=${apiKey}`;
