@@ -362,6 +362,12 @@
         }
     </style>
     <script>
+        // =========================================================================
+        // PERBAIKAN DITAMBAHKAN DI SINI
+        // 1. Fungsi `sanitizeForTTS` untuk membersihkan karakter Markdown.
+        // 2. Logika di `giveAnswer` untuk menyesuaikan ukuran gelembung teks.
+        // =========================================================================
+
         // Sound effects
         let correctSound, incorrectSound;
 
@@ -415,6 +421,8 @@
                 initAudio(); // Also init audio from here
                 this.answerTextEl = document.querySelector('#answer-text');
                 this.speechBubbleEl = document.querySelector('#speech-bubble');
+                // Dapatkan referensi ke latar belakang gelembung
+                this.speechBubbleBgEl = document.querySelector('#speech-bubble-bg');
                 this.robotHeadEl = document.querySelector('#robot-head');
                 
                 this.conversationState = 'IDLE';
@@ -516,13 +524,40 @@
                 }, 50);
             },
             
+            // PERBAIKAN 1: Fungsi untuk membersihkan teks dari karakter Markdown
+            sanitizeForTTS: function(text) {
+                // Menghapus karakter seperti *, #, _, -, dll.
+                return text.replace(/[*#_\-`~]/g, '').replace(/\s+/g, ' ').trim();
+            },
+
             giveAnswer: function(answer, onEndCallback) {
                 this.canListen = false;
                 if (this.isListening) { this.recognition.stop(); }
-                this.typeText(answer); 
+
+                // PERBAIKAN 2: Gunakan teks yang sudah dibersihkan
+                const cleanAnswer = this.sanitizeForTTS(answer);
+
+                // PERBAIKAN 3: Logika untuk menyesuaikan ukuran gelembung teks
+                const wrapCount = 35; // Sesuai dengan atribut wrap-count pada a-text
+                const lines = Math.ceil(cleanAnswer.length / wrapCount);
+                const baseHeight = 0.4; // Tinggi dasar
+                const heightPerLine = 0.2; // Tinggi tambahan per baris
+                let newHeight = baseHeight + (lines * heightPerLine);
+                // Batasi ukuran minimum dan maksimum agar tidak terlalu kecil atau besar
+                newHeight = Math.max(1.0, Math.min(newHeight, 3.0)); 
+                
+                // Terapkan tinggi baru ke latar belakang gelembung
+                this.speechBubbleBgEl.setAttribute('height', newHeight);
+                // Posisikan ulang teks agar tetap di tengah secara vertikal
+                this.answerTextEl.setAttribute('position', `0 ${newHeight / 2 - 0.2} 0.01`);
+
+
+                // Gunakan cleanAnswer untuk ditampilkan dan diucapkan
+                this.typeText(cleanAnswer); 
                 this.speechBubbleEl.setAttribute('visible', 'true'); 
                 this.robotHeadEl.setAttribute('animation', { property: 'rotation', to: '0 -10 0', dir: 'alternate', loop: true, dur: 500 });
-                const utterance = new SpeechSynthesisUtterance(answer);
+                
+                const utterance = new SpeechSynthesisUtterance(cleanAnswer);
                 utterance.lang = 'id-ID';
                 utterance.pitch = 0.5;
                 utterance.rate = 0.8;
@@ -912,9 +947,10 @@
 
         <a-entity id="robot" position="0 0.7 -3" rotation="0 0 0">
             <a-entity id="speech-bubble" position="1.8 1.6 0" visible="false">
-                <a-plane color="#FFFFFF" width="2.5" height="1" rounded="0.2" position="0 0 -0.01"></a-plane>
+                <!-- PERBAIKAN: Menambahkan ID 'speech-bubble-bg' pada a-plane -->
+                <a-plane id="speech-bubble-bg" color="#FFFFFF" width="2.5" height="1" rounded="0.2" position="0 0 -0.01"></a-plane>
                 <a-triangle color="#FFFFFF" vertex-a="-0.1 0 0" vertex-b="0.1 -0.15 0" vertex-c="0.1 0.15 0"></a-triangle>
-                <a-text id="answer-text" value="" color="#00008B" width="2.3" align="center" wrap-count="35" font="kelsonsans"></a-text>
+                <a-text id="answer-text" value="" color="#00008B" width="2.3" align="center" wrap-count="35" font="kelsonsans" position="0 0 0.01"></a-text>
             </a-entity>
             <a-entity id="robot-head" position="0 1.2 0">
                 <a-box position="0 0 0" width="0.9" height="0.8" depth="0.8" color="#FFFFFF" shadow>
@@ -939,4 +975,3 @@
     </a-scene>
 </body>
 </html>
-
